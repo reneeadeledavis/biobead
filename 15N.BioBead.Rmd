@@ -1,6 +1,8 @@
 ---
 title: "$^{15}N_{2}$ uptake in *Brachypodium distachyon* treated with biodegradable hydrogels in EcoFAB model systems"
-output: html_document
+output: 
+  pdf_document:
+    latex_engine: xelatex
 date: "2025-05-06"
 ---
 
@@ -50,14 +52,15 @@ The following week, the dosing was repeated but with a gradient:
 -   BioBead 3 and Ctrl 3: 0 mL
 
 ![Fig 1: 15N2 dosing procedure, week 7.](figures/15N2%20dosing%20wk%207.jpg){width="350"}
+The plants were grown for 8 more weeks until harvest and processing. 
 
 **Isotopic Mass Spectroscopy**
 
-At the end of the experiment, the entire plant (roots and above-ground biomass) were harvested and dried at 60°C for 72 hours. Elemental analyses and isotope composition were obtained from powdered biomass by using an isotope ratio-monitoring mass spectrometer (the EA-ConfloII-Delta XL Plus system) followed by a C and N elemental analyzer.
+At the end of the experiment, the entire plant (roots and above-ground biomass) were harvested and dried at 60°C for 72 hours. Elemental analyses and isotope composition were obtained from dried and powdered samples by a Sercon Integra2 by the University of Oklahoma Stable Isotope Lab.
 
-![Fig 2: EcoFAB units after inoculation, showing roots and hydrogel beads in liquid media.](figures/EcoFAB wk1.jpg){width="350"}
+![Fig 2: EcoFAB units after inoculation, showing roots and hydrogel beads in liquid media.](figures/EcoFAB%20wk1.jpg){width="350"}
 
-![Fig 3: Sideview of EcoFAB units at week 3 showing plant growth.](figures/EcoFAB wk3.jpg){width="350"}
+![Fig 3: Sideview of EcoFAB units at week 3 showing plant growth.](figures/EcoFAB%20wk3.jpg){width="350"}
 
 ## Data Collection
 
@@ -83,15 +86,15 @@ The seedlings showed slow early growth, including yellowing of leaves. To mainta
 
 A Yokogawa CSU-X1 spinning disk confocal microscope was used to image the hydrogel beads, roots, and media at week 10.
 
-![Fig 4: BioBead at 40x showing hyphae interacting with the bead, week 10.](figures/bb1 40x biobead hyphae - improved.jpg){width="350"}
+![Fig 4: BioBead at 40x showing hyphae interacting with the bead, week 10.](figures/bb1%2040x%20biobead%20hyphae%20-%20improved.jpg){width="350"}
 
-![Fig 5: Germinating AMF spore from BioBead unit, 40x, week 10.](figures/bb1 spore germinating 2.jpg){width="350"}
+![Fig 5: Germinating AMF spore from BioBead unit, 40x, week 10.](figures/bb1%20spore%20germinating%202.jpg){width="350"}
 
 The micrographs from the BioBead units are teeming with life. Microbes can be seen in the media. Hyphae penetrate beads and roots.
 
-![Fig 6: Control hydrogel bead at 40x. Week 10.](figures/ctrl 1 biobead.jpg){width="350"}
+![Fig 6: Control hydrogel bead at 40x. Week 10.](figures/ctrl%201%20biobead.jpg){width="350"}
 
-![Fig 7: Control hydrogel bead from another unit, 40x. Week 10.](figures/ctrl 3 bead.jpg){width="350"}
+![Fig 7: Control hydrogel bead from another unit, 40x. Week 10.](figures/ctrl%203%20bead.jpg){width="350"}
 
 # Results
 
@@ -143,7 +146,29 @@ At the end of experiment, the hydrogel beads and roots from each EcoFAB were sta
 
 ## d15N concentrations
 
-To be analyzed by the University of Oklahoma Stable Isotope Lab in May 2025.
+```{r}
+library(ggplot2)
+library(readr)
+library(dplyr)
+
+# read in data
+data <- read_csv("d15N_EcoFAB.csv")
+
+# Create the plot
+ggplot(data, aes(x = Name, y = d15N, fill = Part)) +
+  geom_bar(stat = "identity", position = position_dodge((width = 0.8))) +
+  labs(
+    title = "δ15N Values by Treatment and Part",
+    x = "Treatment",
+    y = "Final scaled δ15N (‰, AIR)",
+    fill = "Part"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+Overall, the BioBead samples yield greater $\delta^{15}N$ values compared to untreated controls. The bead and root portions contained more $^{15}N$ compared to aerial biomass. This suggests slow uptake of N into aerial biomass, which could have occurred for several reasons. Following $^{15}N$ enrichment, the plants were grown for 8 more weeks to allow for optimal N metabolism and uptake. However, plant growth was observed to be slow. In a hydroponic environment with limited gas exchange, tissue growth may not be optimal hence stifling N uptake. Alternatively, the plants may have needed longer than 8 weeks for uptake. 
+
+Due to low sample yield, the aerial biomass and roots from BioBead3 were combined. The analytical team also noted that Ctrl1 Bead, Ctrl2 Bead, Ctrl3 Root, Ctrl3 Bead, and BioBead2 Root all had beam areas outside the analytical range of the instrument or were beyond the within-run calibration. Therefore, concentrations and/or isotope values for these samples should be carefully evaluated.
 
 # References
 

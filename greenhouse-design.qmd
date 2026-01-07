@@ -1,0 +1,76 @@
+---
+title: "BioBead - Greenhouse Study Design"
+format: html
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# Treatment levels
+
+BioBead
+
+BioBead - bacteria, AMF, biochar
+
+Commercial biofertilizer
+
+Liquid consortia
+
+Untreated (neg control)
+
+postive control (synthetic fertilizer)
+
+# Setup
+
+6 replicates (36 pots total)
+
+1 gallon pots, 3 plants each pot
+
+root exclusion design
+
+wheat plants
+
+# Measurements
+
+## mid exp
+
+2% 15N dosing during stem elongation stage
+
+moisture
+
+PRS probes - soil anion/cation exchange (Western Ag)
+
+13C dosing? \<--too much, or does 15N experience give us enough to go
+on?
+
+leachate runoff (Cu, Zn) \<- seems lower priority
+
+GHG emissions (NH4, N2O, CO2?)\<- seems lower priority
+
+## end of experiment
+
+15N, 13C isotopic ratios in roots, above ground biomass (UO)
+
+wheat grain yield
+
+root, soil metagenomes
+
+# Materials
+
+Mesh screen
+
+36 pots
+
+Soil
+
+Wheat seeds
+
+PRS probes
+
+# Methods
+
+1.  Order mesh screen
+2.  Order PRS probes (release 30 for award, purchase the rest)
+3.  Order 15N2 gas
+
+Germinate wheat seeds
