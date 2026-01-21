@@ -1,0 +1,27 @@
+---
+title: "Leachate Analysis from 2025 Greenhouse Study"
+author: "Renee Davis"
+format: revealjs
+editor: visual
+---
+
+## Methods
+
+Nutrient leachate samples were collected at five timepoints throughout the 14-week wheat growing period: weeks 2, 4, 6, and 8 (corresponding to days 14, 28, 42, and 56 post-planting). To collect leachate, each pot was watered heavily with 1000 mL of water. After allowing drainage, leachate was collected from the collection tray beneath each pot. All seven biological replicates per treatment were sampled at each timepoint (n = 7 per treatment per timepoint).
+
+Leachate samples were analyzed for ammonium (NH₄⁺-N), nitrate (NO₃⁻-N), and phosphate (PO₄³⁻-P) concentrations using a Gallery™ Analyzer (ThermoFisher Scientific). A water blank was included in each analytical run for quality control. Due to the sensitivity of phosphate to freezing, samples were stored at 4°C and analyzed within 24 hours of collection to prevent degradation.
+
+## Bullets
+
+When you click the **Render** button a document will be generated that includes:
+
+-   Content authored with markdown
+-   Output from executable code
+
+## Code
+
+When you click the **Render** button a presentation will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+1 + 1
+```
