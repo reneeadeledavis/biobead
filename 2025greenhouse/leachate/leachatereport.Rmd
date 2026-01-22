@@ -3,11 +3,17 @@ title: "Leachate Analysis from 2025 Greenhouse Study"
 author: "Renee Davis"
 date: "`r Sys.Date()`"
 output:
-  pdf_document: 
-      latex_engine: xelatex
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    toc_float: true
   word_document: default
-  html_document: default
+  pdf_document: 
+    latex_engine: xelatex
 ---
+
+[GitHub repository](https://github.com/reneeadeledavis/biobead/tree/main/2025greenhouse)
 
 # Methods
 
@@ -120,7 +126,7 @@ ggplot(wk2_melt, aes(x = Treatment_Category, y = value, fill = Treatment_Categor
 
 ### Correlation scatterplots
 
-QQ plots were generated to assess the correlations between nitrate and phosphate and ammonium.
+Correlation scatterplots were generated to assess the correlations between nitrate and phosphate and ammonium.
 
 ```{r, echo=FALSE}
 ggscatter(Week2_subset, x = "PO4.P_ugml", y = "NO3.N_ugml", 
@@ -177,6 +183,7 @@ shapiro.test(anova_PO4_wk2$residuals)
 Together, the W values for all ANOVA tests (0.83-0.93) indicate deviation from normality. The very low p values indicate that there are significant differences in normality. Therefore, alternative statistical analyses should be considered.
 
 ### Residuals distribution
+
 ```{r, echo=FALSE, fig.width=6, fig.height=4}
 hist(anova_NH4_wk2$residuals, 
      main = "NH4 Residuals - Week 2", 
@@ -195,6 +202,19 @@ hist(anova_PO4_wk2$residuals,
      xlab = "Residuals",
      col = "lightblue",
      breaks = 20)
+```
+
+### Quantile-Quantile plots
+
+```{r}
+qqnorm(anova_NH4_wk2$residuals, main = "Normal Q-Q Plot - NH4 Week 2")
+qqline(anova_NH4_wk2$residuals, col = "lightblue", lwd = 2)
+
+qqnorm(anova_NO3_wk2$residuals, main = "Normal Q-Q Plot - NH4 Week 2")
+qqline(anova_NO3_wk2$residuals, col = "lightblue", lwd = 2)
+
+qqnorm(anova_PO4_wk2$residuals, main = "Normal Q-Q Plot - NH4 Week 2")
+qqline(anova_PO4_wk2$residuals, col = "lightblue", lwd = 2)
 ```
 
 ## Week 4 Analysis
@@ -254,7 +274,7 @@ ggplot(wk4_melt, aes(x = Treatment_Category, y = value, fill = Treatment_Categor
 
 ### Correlation scatterplots
 
-QQ plots were generated to assess the correlations between nitrate and phosphate and ammonium.
+Correlation scatterplots were generated to assess the correlations between nitrate and phosphate and ammonium.
 
 ```{r, echo=FALSE}
 ggscatter(Week4_subset, x = "PO4.P_ugml", y = "NO3.N_ugml", 
@@ -311,6 +331,7 @@ shapiro.test(anova_PO4_wk4$residuals)
 Similar to week 2, there are similarly high W values (0.77091, 0.77616, 0.92579) and very low p values. This indicates that the data are not normal.
 
 ### Residuals distribution
+
 ```{r, echo=FALSE, fig.width=6, fig.height=4}
 hist(anova_NH4_wk4$residuals, 
      main = "NH4 Residuals - Week 4", 
@@ -329,6 +350,19 @@ hist(anova_PO4_wk4$residuals,
      xlab = "Residuals",
      col = "lightblue",
      breaks = 20)
+```
+
+### Quantile-Quantile plots
+
+```{r}
+qqnorm(anova_NH4_wk4$residuals, main = "Normal Q-Q Plot - NH4 Week 4")
+qqline(anova_NH4_wk4$residuals, col = "lightblue", lwd = 2)
+
+qqnorm(anova_NO3_wk4$residuals, main = "Normal Q-Q Plot - NO3 Week 4")
+qqline(anova_NO3_wk4$residuals, col = "lightblue", lwd = 2)
+
+qqnorm(anova_PO4_wk4$residuals, main = "Normal Q-Q Plot - PO4 Week 4")
+qqline(anova_PO4_wk4$residuals, col = "lightblue", lwd = 2)
 ```
 
 ## Week 6 Analysis
@@ -388,7 +422,7 @@ ggplot(wk6_melt, aes(x = Treatment_Category, y = value, fill = Treatment_Categor
 
 ### Correlation scatterplots
 
-QQ plots were generated to assess the correlations between nitrate and phosphate and ammonium.
+Correlation scatterplots were generated to assess the correlations between nitrate and phosphate and ammonium.
 
 ```{r, echo=FALSE}
 ggscatter(Week6_subset, x = "PO4.P_ugml", y = "NO3.N_ugml", 
@@ -445,6 +479,7 @@ shapiro.test(anova_PO4_wk6$residuals)
 Similar to week 2, there are similarly high W values (0.80185, 0.3975, 0.92579) and very low p values. This indicates that the data are not normal.
 
 ### Residuals distribution
+
 ```{r, echo=FALSE, fig.width=6, fig.height=4}
 hist(anova_NH4_wk6$residuals, 
      main = "NH4 Residuals - Week 6", 
@@ -463,6 +498,19 @@ hist(anova_PO4_wk6$residuals,
      xlab = "Residuals",
      col = "lightblue",
      breaks = 20)
+```
+
+### Quantile-Quantile plots
+
+```{r}
+qqnorm(anova_NH4_wk6$residuals, main = "Normal Q-Q Plot - NH4 Week 6")
+qqline(anova_NH4_wk6$residuals, col = "lightblue", lwd = 2)
+
+qqnorm(anova_NO3_wk6$residuals, main = "Normal Q-Q Plot - NO3 Week 6")
+qqline(anova_NO3_wk6$residuals, col = "lightblue", lwd = 2)
+
+qqnorm(anova_PO4_wk6$residuals, main = "Normal Q-Q Plot - PO4 Week 6")
+qqline(anova_PO4_wk6$residuals, col = "lightblue", lwd = 2)
 ```
 
 ## Week 8 Analysis
@@ -522,7 +570,7 @@ ggplot(wk8_melt, aes(x = Treatment_Category, y = value, fill = Treatment_Categor
 
 ### Correlation scatterplots
 
-QQ plots were generated to assess the correlations between nitrate and phosphate and ammonium.
+Correlation scatterplots were generated to assess the correlations between nitrate and phosphate and ammonium.
 
 ```{r, echo=FALSE}
 ggscatter(Week8_subset, x = "PO4.P_ugml", y = "NO3.N_ugml", 
@@ -593,6 +641,7 @@ shapiro.test(anova_PO4_wk8$residuals)
 Similar to previous weeks, there are similarly very low p values. This indicates that the data are not normal.
 
 ### Residuals distribution
+
 ```{r, echo=FALSE, fig.width=6, fig.height=4}
 hist(anova_NH4_wk8$residuals, 
      main = "NH4 Residuals - Week 8", 
@@ -611,6 +660,19 @@ hist(anova_PO4_wk8$residuals,
      xlab = "Residuals",
      col = "lightblue",
      breaks = 20)
+```
+
+### Quantile-Quantile plots
+
+```{r}
+qqnorm(anova_NH4_wk8$residuals, main = "Normal Q-Q Plot - NH4 Week 8")
+qqline(anova_NH4_wk8$residuals, col = "lightblue", lwd = 2)
+
+qqnorm(anova_NO3_wk8$residuals, main = "Normal Q-Q Plot - NO3 Week 8")
+qqline(anova_NO3_wk8$residuals, col = "lightblue", lwd = 2)
+
+qqnorm(anova_PO4_wk8$residuals, main = "Normal Q-Q Plot - PO4 Week 8")
+qqline(anova_PO4_wk8$residuals, col = "lightblue", lwd = 2)
 ```
 
 # Discussion
