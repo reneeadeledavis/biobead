@@ -1,0 +1,23 @@
+---
+title: "Greenhouse Data Analysis"
+author: "Renee Davis"
+date: "r Sys.Date()"
+format: revealjs
+editor: visual
+---
+
+# Study Overview
+
+## Treatment Groups
+
+# Nutrient Leachate
+
+# Soil Moisture
+
+# Soil Anion/Cation 
+
+# General Observations
+
+-   Residual data borderline for normality tests, non parametric ones may be implicated (or data transformation/normalization)
+
+## Next steps
