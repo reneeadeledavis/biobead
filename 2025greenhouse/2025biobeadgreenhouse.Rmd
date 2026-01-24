@@ -28,8 +28,7 @@ evaluated the impacts of 14 different microbe inoculations and
 treatments on soil microbiology, wheat growth, root colonization, and
 greenhouse gas emissions. This specific project will focus on soil
 geochemistry, nutrient dynamics, and soil moisture data, with other data
-being incorporated in subsequent phases. These will provide a foundation
-for expansion into larger field trials and BioBead formulation
+being incorporated in subsequent phases. The responses measured at different intervals will have to be analyzed separately, or combined in another manner. These results will provide a foundation for expansion into larger field trials and BioBead formulation
 improvements in 2026 and beyond, and hopefully become publications and
 dissertation chapters.
 
@@ -55,7 +54,7 @@ at week 6 and retrieved after 14 days. Probes were sent to Western Ag
 for analysis of soil cation and anion exchange capacity via HPLC. At
 experiment termination (week 14), above-ground biomass was harvested and
 weighed, and rhizosphere soil and root samples were collected and stored
-at -80°C for future DNA extraction and metagenomic sequencing.
+at -80°C for future DNA extraction and metagenomic sequencing. (These data are mentioned for reference and will not be analyzed in this project.)
 
 # Data
 
@@ -65,13 +64,13 @@ at -80°C for future DNA extraction and metagenomic sequencing.
 document.
 
 **Leachates_2025.csv** - Ammonium, nitrate, and phosphate leachate
-concentrations recorded throughout the study.
+concentrations recorded throughout the study. (This is a time series, so temporal autocorrelation may be important.)
 
 **PRS_GH_2025.csv** - Soil anion and cation exchange data from PRS
 probes.
 
 **WheatMoistureData_2025.csv** - Soil moisture data recorded throughout
-the study.
+the study.(This is a time series, so temporal autocorrelation may be important.)
 
 These are contained in the [GitHub
 repository](https://github.com/reneeadeledavis/biobead).
