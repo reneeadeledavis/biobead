@@ -1,0 +1,288 @@
+---
+title: "Plant Root Simulator (PRS) Analysis from 2025 Greenhouse Study"
+author: "Renee Davis"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    toc_float: true
+  word_document: default
+  pdf_document: 
+    latex_engine: xelatex
+---
+
+# Methods
+
+## Sample Collection
+
+A pair (anion and cation) of Plant Root Simulator (PRS) probes were buried in pots at the end of week 5 and retrieved at the end of week 7 (14 day burial period). Upon removal, they were rinsed with DI water, aggregated into groups of 2 or 3 pairs (each treatment having 7 probe pairs) shipped to Western Ag for HPLC analysis. Data are received as nutrient supply rate (ug/10cm\^2/14 days). There are 16 total anions and cations reported. For the purposes of this study, we will focus on nitrate, ammonium, and phosphate.
+
+## Data Structure and Statistical Analysis
+
+Unlike the other datasets, there isn't a distinct sample unit for each treatment. I will run the ANOVA for each Treatment Category as-is (that is to say that there are 3 analyses that represent 7 biological replicates) to keep as full of a picture as possible. There are different possible approaches however. This can be condensed into the mean of each ion for a treatment category. One can also go in the opposite direction: the sample units can be expanded and parsed out using the reported nutrient supply rate.
+
+For an initial analysis, the impact of treatments on each ion will be evaluate via ANOVA. It can be melded with week 6 soil moisture and nutrient leachate datasets for downstream multivariate analyses.
+
+# Results
+
+```{r, echo=FALSE, include=FALSE}
+##Load packages
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+
+##Read in data
+Ions_2025 <- read.csv("PRS_2025.csv", header = TRUE)
+
+##Convert to long format
+Ions_long <- Ions_2025 %>%
+  pivot_longer(
+    cols = c(`NO3.N`, `NH4.N`, P),
+    names_to = "Ion",
+    values_to = "Supply_rate"
+  )
+
+#Summary stats
+Summary <- Ions_long %>% 
+  group_by(Ion, Treatment_Category) %>%
+  summarize(
+    ion_mean = mean(Supply_rate, na.rm = TRUE),
+    ion_sd = sd(Supply_rate, na.rm = TRUE),
+    ion_se = sd(Supply_rate, na.rm = TRUE) / sqrt(sum(!is.na(Supply_rate))),
+    n = n(),
+    .groups = 'drop'
+  )
+
+#Subset data
+NO3_subset <- Ions_long %>% filter(Ion == "NO3.N") #want to filter the long-format data for ions
+NH4_subset <- Ions_long %>% filter(Ion == "NH4.N")
+P_subset <- Ions_long %>% filter(Ion == "P")
+```
+
+## Nitrate
+
+### Violin plot
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(NO3_subset, aes(x = Treatment_Category, y = Supply_rate)) +
+  geom_violin(alpha = 0.4, trim = FALSE) +
+  geom_boxplot(width = 0.2, 
+               outlier.shape = NA,
+               alpha = 0.5) +
+  geom_jitter(width = 0.1, 
+              size = 1.5, 
+              alpha = 0.5) +
+  scale_fill_brewer(palette = "Set3") +
+  labs(title = "Nitrate Supply Rate", 
+       x = "Treatment", 
+       y = "Supply Rate (ug/10cm^2/14 days)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size = 9),
+        plot.title = element_text(hjust = 0.5, size = 22),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 12),
+        strip.text = element_text(size = 12, face = "bold"),
+        legend.position = "none")
+```
+
+Fertilizer treatments are associated with the highest nitrate supply rate. The BioBead and liquid consortia treatments are associated with some of the lowest.
+
+### One Way ANOVA
+
+```{r, echo=FALSE}
+anova_NO3 <- aov(Supply_rate ~ Treatment_Category, data = NO3_subset)
+summary(anova_NO3)
+```
+
+There were significant differences among treatment groups for nitrate supply rate (F stat (13,28) = 2.605, p = 0.0165).
+
+### Tukey Test
+
+```{r, echo=FALSE}
+tukey_NO3 <- TukeyHSD(x=anova_NO3, ordered=TRUE, conf.level=0.95)
+#print(tukey_NO3)
+```
+
+There were significant differences among the following treatment groups for nitrate supply rate: Fertilizer and Liquid_Mixed (p = 0.0128161), Fertilizer and SL_BioBead_Bac (p = 0.0455666), and Fertilizer and BioBead_Mixed_reduced (p = 0.0104057). All involve fertilizer.
+
+### Shapiro Wilk test for normality
+
+```{r, echo=FALSE}
+shapiro.test(anova_NO3$residuals)
+```
+
+The W value and high p value indicate non-normality for residuals.
+
+### Residuals distribution
+
+```{r, echo=FALSE, fig.width=6, fig.height=4}
+hist(anova_NO3$residuals, 
+     main = "Supply Rate Residuals - NO3", 
+     xlab = "Residuals",
+     col = "lightblue",
+     breaks = 20)
+```
+
+### Quantile-Quantile plots
+
+```{r}
+qqnorm(anova_NO3$residuals, main = "Normal Q-Q Plot - Supply Rate Residuals - NO3")
+qqline(anova_NO3$residuals, col = "lightblue", lwd = 2)
+```
+
+## Ammonium
+
+### Violin plot
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(NH4_subset, aes(x = Treatment_Category, y = Supply_rate)) +
+  geom_violin(alpha = 0.4, trim = FALSE) +
+  geom_boxplot(width = 0.2, 
+               outlier.shape = NA,
+               alpha = 0.5) +
+  geom_jitter(width = 0.1, 
+              size = 1.5, 
+              alpha = 0.5) +
+  scale_fill_brewer(palette = "Set3") +
+  labs(title = "Ammonium Supply Rate", 
+       x = "Treatment", 
+       y = "Supply Rate (ug/10cm^2/14 days)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size = 9),
+        plot.title = element_text(hjust = 0.5, size = 22),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 12),
+        strip.text = element_text(size = 12, face = "bold"),
+        legend.position = "none")
+```
+
+Ammonium has a smaller range than nitrate in terms of supply rate. Fertilizer and HardyGro had some of the highest ammonium supply rates. The BioBead, strigolactone, and AMF treatments were associated with a wide range of responses.
+
+### One Way ANOVA
+
+```{r, echo=FALSE}
+anova_NH4 <- aov(Supply_rate ~ Treatment_Category, data = NH4_subset)
+summary(anova_NH4)
+```
+
+There were not significant differences among treatment groups for ammonium supply rate (F stat (13,28) = 1.108, p = 0.392).
+
+### Tukey Test
+
+```{r, echo=FALSE}
+tukey_NH4 <- TukeyHSD(x=anova_NH4, ordered=TRUE, conf.level=0.95)
+#print(tukey_NH4)
+```
+
+There were no significant differences among the following treatment groups for ammonium in a post-hoc Tukey HSD test.
+
+### Shapiro Wilk test for normality
+
+```{r, echo=FALSE}
+shapiro.test(anova_NH4$residuals)
+```
+
+The W and p value indicate borderline normality with residuals.
+
+### Residuals distribution
+
+```{r, echo=FALSE, fig.width=6, fig.height=4}
+hist(anova_NH4$residuals, 
+     main = "Supply Rate Residuals - NH4", 
+     xlab = "Residuals",
+     col = "lightblue",
+     breaks = 20)
+```
+
+### Quantile-Quantile plots
+
+```{r}
+qqnorm(anova_NH4$residuals, main = "Normal Q-Q Plot - Supply Rate Residuals - NH4")
+qqline(anova_NH4$residuals, col = "lightblue", lwd = 2)
+```
+
+## Phosphate
+
+### Violin plot
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(P_subset, aes(x = Treatment_Category, y = Supply_rate)) +
+  geom_violin(alpha = 0.4, trim = FALSE) +
+  geom_boxplot(width = 0.2, 
+               outlier.shape = NA,
+               alpha = 0.5) +
+  geom_jitter(width = 0.1, 
+              size = 1.5, 
+              alpha = 0.5) +
+  scale_fill_brewer(palette = "Set3") +
+  labs(title = "Phosphate Supply Rate", 
+       x = "Treatment", 
+       y = "Supply Rate (ug/10cm^2/14 days)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size = 9),
+        plot.title = element_text(hjust = 0.5, size = 22),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 12),
+        strip.text = element_text(size = 12, face = "bold"),
+        legend.position = "none")
+```
+
+Fertilizer and 1/2 dose BioBead treatments are associated with higher phosphate supply rates (and more variation).The empty bead, HardyGro, and BioBead formuations have lower phosphate supply rates.
+
+### One Way ANOVA
+
+```{r, echo=FALSE}
+anova_P <- aov(Supply_rate ~ Treatment_Category, data = P_subset)
+summary(anova_P)
+```
+
+There were no significant differences among treatment groups for nitrate supply rate (F stat (13,28) = 1.782, p = 0.0976).
+
+### Tukey Test
+
+```{r, echo=FALSE}
+tukey_P <- TukeyHSD(x=anova_P, ordered=TRUE, conf.level=0.95)
+#print(tukey_P)
+```
+
+There were no significant differences among the following treatment groups for phosphate supply rate in a post-hoc Tukey HSD test.
+
+### Shapiro Wilk test for normality
+
+```{r, echo=FALSE}
+shapiro.test(anova_P$residuals)
+```
+
+The W value and high p value indicate boderline normality with residuals.
+
+### Residuals distribution
+
+```{r, echo=FALSE, fig.width=6, fig.height=4}
+hist(anova_P$residuals, 
+     main = "Supply Rate Residuals - P", 
+     xlab = "Residuals",
+     col = "lightblue",
+     breaks = 20)
+```
+
+### Quantile-Quantile plots
+
+```{r}
+qqnorm(anova_P$residuals, main = "Normal Q-Q Plot - Supply Rate Residuals - P")
+qqline(anova_P$residuals, col = "lightblue", lwd = 2)
+```
+
+# Discussion
+
+Out of the 3 ions evaluated, only the nitrate supply rate was statistically significant between groups. The pairs that were significantly different in a post hoc test were Fertilizer and SL_BioBead_Bac, BioBead_Mixed_reduced (p = 0.0104057).
+
+## Next steps
+
+1.  How do these data correlate with nutrient leachate (week 6)?
+
+2.  Consider nonparametric tests, or data normalization/relativization.
