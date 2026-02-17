@@ -3,14 +3,14 @@ title: "Leachate Analysis from 2025 Greenhouse Study"
 author: "Renee Davis"
 date: "`r Sys.Date()`"
 output:
+  pdf_document: 
+    latex_engine: xelatex
+  word_document: default
   html_document:
     toc: true
     toc_depth: 3
     number_sections: true
     toc_float: true
-  word_document: default
-  pdf_document: 
-    latex_engine: xelatex
 ---
 
 [GitHub repository](https://github.com/reneeadeledavis/biobead/tree/main/2025greenhouse)
@@ -22,6 +22,25 @@ output:
 Nutrient leachate samples were collected at five timepoints throughout the 14-week wheat growing period: weeks 2, 4, 6, and 8 (corresponding to days 14, 28, 42, and 56 post-planting). To collect leachate, each pot was watered heavily with 1000 mL of water. After allowing drainage, leachate was collected from the collection tray beneath each pot. All seven biological replicates per treatment were sampled at each timepoint (n = 7 per treatment per timepoint).
 
 Leachate samples were analyzed for ammonium (NH₄⁺-N), nitrate (NO₃⁻-N), and phosphate (PO₄³⁻-P) concentrations using a Gallery™ Analyzer (ThermoFisher Scientific). A water blank was included in each analytical run for quality control. Due to the sensitivity of phosphate to freezing, samples were stored at 4°C and analyzed within 24 hours of collection to prevent degradation.
+
+## Data Analysis
+
+General trends in nutrient leachate data (NO₃⁻, NH₄⁺, PO₄³⁻) were visualized using violin plots.
+
+Data were analyzed separately for each sampling week using one-way analysis of variance (ANOVA) with treatment as the fixed factor. Prior to analysis, ANOVA assumptions were verified by visual inspection of residual plots and Shapiro-Wilk tests for normality. For datasets meeting parametric assumptions, Tukey's Honest Significant Difference (HSD) post-hoc tests were conducted to identify pairwise differences among treatments (α = 0.05).
+
+All analyses were conducted in R version 2025.09.2+418 using the base stats package, tidyverse, dplyr. Plots were generated with the ggstatsplot, ggplot2, plotrix, and ggpubr.
+
+## Hypotheses
+1.  Treatments with nitrogen-fixing bacteria (T1, T3, T4, T5, T7, T9) will exhibit elevated ammonium leachate concentrations compared to untreated controls due to enhanced N fixation in the plant-soil system.
+
+2.  Treatments containing AMF (T2, T3, T4, T6) will show reduced phosphate leachate compared to non-AMF treatments due to direct P transfer to plants via mycorrhizal networks.
+
+3.  Combined bacteria+AMF treatments (T3, T4) will demonstrate synergistic effects, showing lower leachate concentrations of all three nutrients compared to single-inoculant treatments due to complementary nutrient acquisition strategies.
+
+4.  Strigolactone-primed treatments (T4, T5, T6) will exhibit lower nutrient leachate at later timepoints (weeks 6-8) compared to non-primed equivalents due to accelerated AMF colonization and symbiosis establishment.
+
+5.  Synthetic fertilizer (T13) will show highest nutrient leachate concentrations, particularly early in the study, due to rapid nutrient availability exceeding plant uptake capacity.
 
 # Results
 
@@ -155,7 +174,7 @@ summary(anova_NO3_wk2)
 summary(anova_PO4_wk2)
 ```
 
-There were no significant differences among treatment groups for ammonium and phosphate concentrations in leachate. Nitrate concentrations different marginally between treatments (0.0544).
+There were no significant differences among treatment groups for ammonium and phosphate concentrations in leachate. Nitrate concentrations differed marginally between treatments (0.0544).
 
 ### Tukey Test
 

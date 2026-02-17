@@ -1,0 +1,213 @@
+---
+title: "N2O-N Flux Data from 2025 Greenhouse Study"
+author: "Renee Davis"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  word_document: default
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    toc_float: true
+---
+
+[GitHub repository](https://github.com/reneeadeledavis/biobead/tree/main/2025greenhouse)
+
+# Methods
+
+## Sample Collection and Analysis
+Gas sampling was conducted for weeks 4, 6, and 8 between 2-4pm. Cylinders were capped for 30 mins, and samples taken with a syringe in a 60 mL serum bottle. Samples were analyzed within 7 days (verify) on a SRI gas chromatograph with flame ionization detector with (column info). 
+
+## Gas calculations
+
+A standard curve was generated to calculate ppm from peak area. To determine flux of N2O-N, the following equations were used. These were obtained from Kellogg Biological Station at Michigan State University (see References).
+
+The ppm measurements are adjusted for volume per minute.  This is equivalent to microliter per liter per minute (μL/L/min, αv). This is converted to a mass (αm, expressed in μg N):
+
+αm = (αv x M x P) / (R x T)
+
+Then, flux (fm) is calculated as a microgram element (N for N2O per square meter per hour) using the equation:
+
+fm = (αm x V x 60 min/h) / A
+
+# Results
+```{r, echo=FALSE, include=FALSE}
+##Load packages
+library(ggstatsplot)
+library(ggplot2)
+library(reshape)
+library(dplyr)
+library(plotrix)
+library(see)
+library(ggpubr)
+
+##Read in data
+N2O_2025 <- read.csv("N2O_fluxdata.csv", header = TRUE)
+
+# Calculate summary statistics by treatment and sample period
+summary_data <- N2O_2025 %>%
+  group_by(Date, Treatment) %>%
+  summarise(
+    mean_area = mean(Fm_Flux_ug.N2O.N_sqmt_hr, na.rm = TRUE),
+    sd_area = sd(Fm_Flux_ug.N2O.N_sqmt_hr, na.rm = TRUE),
+    se_area = sd(Fm_Flux_ug.N2O.N_sqmt_hr, na.rm = TRUE) / sqrt(n()),
+    n = n(),
+    .groups = 'drop'
+  )
+
+# Display summary statistics
+cat("=== Summary Statistics ===\n")
+print(summary_data, n = Inf)
+cat("\n")
+```
+
+## Week 4
+```{r}
+week4_data <- summary_data %>% 
+  filter(Date == "Week_4") %>%
+  arrange(desc(mean_area))
+
+ggplot(week4_data, aes(x = reorder(Treatment, -mean_area), y = mean_area)) +
+  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8, color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = mean_area - se_area, ymax = mean_area + se_area),
+                width = 0.3, linewidth = 0.5) +
+  labs(
+    title = expression(bold("N"[2]*"O-N Flux by Treatment - Week 4")),
+    x = "Treatment",
+    y = expression(bold("ug N"[2]*"O-N/sqmt/hr (Mean ± SE)"))
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.x = element_text(face = "bold", size = 12, margin = margin(t = 10)),
+    axis.title.y = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+```
+
+### One Way ANOVA
+
+```{r, echo=FALSE}
+week4_raw <- N2O_2025 %>% 
+  filter(Date == "Week_4")
+
+anova_wk4.n2O <- aov(Fm_Flux_ug.N2O.N_sqmt_hr ~ Treatment, data = week4_raw)
+summary(anova_wk4.n2O)
+```
+### Tukey Test
+
+```{r, echo=FALSE}
+tukey_wk4.n2O <- TukeyHSD(x=anova_wk4.n2O, ordered=TRUE, conf.level=0.95)
+#print(tukey_wk4.n2O)
+```
+
+## Week 6
+```{r}
+week6_data <- summary_data %>% 
+  filter(Date == "Week_6") %>%
+  arrange(desc(mean_area))
+
+ggplot(week6_data, aes(x = reorder(Treatment, -mean_area), y = mean_area)) +
+  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8, color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = mean_area - se_area, ymax = mean_area + se_area),
+                width = 0.3, linewidth = 0.5) +
+  labs(
+    title = expression(bold("N"[2]*"O-N Flux by Treatment - Week 6")),
+    x = "Treatment",
+    y = expression(bold("ug N"[2]*"O-N/sqmt/hr (Mean ± SE)"))
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.x = element_text(face = "bold", size = 12, margin = margin(t = 10)),
+    axis.title.y = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+```
+
+### One Way ANOVA
+
+```{r, echo=FALSE}
+week6_raw <- N2O_2025 %>% 
+  filter(Date == "Week_6")
+
+anova_wk6.n2O <- aov(Fm_Flux_ug.N2O.N_sqmt_hr ~ Treatment, data = week6_raw)
+summary(anova_wk6.n2O)
+```
+### Tukey Test
+
+```{r, echo=FALSE}
+tukey_wk6.n2O <- TukeyHSD(x=anova_wk6.n2O, ordered=TRUE, conf.level=0.95)
+#print(tukey_wk6.n2O)
+```
+
+## Week 8
+```{r}
+week8_data <- summary_data %>% 
+  filter(Date == "Week_8") %>%
+  arrange(desc(mean_area))
+
+ggplot(week8_data, aes(x = reorder(Treatment, -mean_area), y = mean_area)) +
+  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8, color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = mean_area - se_area, ymax = mean_area + se_area),
+                width = 0.3, linewidth = 0.5) +
+  labs(
+    title = expression(bold("N"[2]*"O-N Flux by Treatment - Week 8")),
+    x = "Treatment",
+    y = expression(bold("ug N"[2]*"O-N/sqmt/hr (Mean ± SE)"))
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.x = element_text(face = "bold", size = 12, margin = margin(t = 10)),
+    axis.title.y = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+```
+
+### One Way ANOVA
+
+```{r, echo=FALSE}
+week8_raw <- N2O_2025 %>% 
+  filter(Date == "Week_8")
+
+anova_wk8.n2O <- aov(Fm_Flux_ug.N2O.N_sqmt_hr ~ Treatment, data = week8_raw)
+summary(anova_wk8.n2O)
+```
+
+### Tukey Test
+
+```{r, echo=FALSE}
+tukey_wk8.n2O <- TukeyHSD(x=anova_wk8.n2O, ordered=TRUE, conf.level=0.95)
+#print(tukey_wk8.n2O)
+```
+
+# Discussion 
+
+The N2O-N fluxes for each treatment appear to be generally consistent across the 3 timepoints. NPK fertilizer is associated with the highest N2O-N flux compared to other treatments, particularly by week 8. The negative control/no treatment group were runner ups in weeks 4 and 8. Overall, the biological treatments are similar to one another. 
+
+There are some temporal patterns worth noticing. Fertilizer rates drop from week 4 to 6, and then rise again at week 8. 
+
+The negative control should not be emitting N2O. Could there be residual nutrients in the soil producing this? Could there baseline microbial nitrification or denitrification activity? How does this compare to the "reduced" treatment?
+
+Interestingly, the strigolactone (SL) treatments had slightly higher N2O-N fluxes compared to non-SL BioBead treatments. Microbial community analyses can further illuminate whether the presence of AOB and AOA is a contributing factor in these data. 
+
+In using a One Way ANOVA test, each timepoint had statistically significant differences between groups. In post-hoc Tukey test, there were many significant differences between fertilizer and other treatment groups. 
+
+## Next steps
+
+1. Perform pairwise T tests on SL vs non SL BioBeads for N2O-N flux.
+
+2. Plot residual histograms and QQ plots to check for residual normality. 
+
+# References 
+
+https://lter.kbs.msu.edu/protocols/113

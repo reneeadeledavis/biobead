@@ -3,14 +3,14 @@ title: "Soil Moisture Analysis from 2025 Greenhouse Study"
 author: "Renee Davis"
 date: "`r Sys.Date()`"
 output:
+  pdf_document: 
+    latex_engine: xelatex
+  word_document: default
   html_document:
     toc: true
     toc_depth: 3
     number_sections: true
     toc_float: true
-  word_document: default
-  pdf_document: 
-    latex_engine: xelatex
 ---
 
 [GitHub repository](https://github.com/reneeadeledavis/biobead/tree/main/2025greenhouse)
@@ -22,6 +22,14 @@ output:
 Soil moisture was measured weekly throughout the 8-week wheat growing period. This analysis will focus on weeks 2, 4, 6, 8 in part to evaluate it alongside nutrient leachate data from the same experiment.
 
 To measure moisture, [specific probe] was inserted into soils 5 days after watering in triplicate. A representative number was selected and recorded. A One-way ANOVA will be used to evaluate whether there any significant differences in soil moisture among the treatment groups. Residual normality will be checked with Shapiro_wilk test, and Tukey HSD will be used to evaluate The BioBead hydrogel are expected to be associated with statistically signficant differences in soil moisture. A Two-way ANOVA can also be used to parse out hydrogel-based treatments from the others.
+
+## Hypotheses and Expectations
+
+1.  Hydrogel-containing treatments (T1-T8, T11, T12) will maintain higher soil moisture 24 hours post-watering compared to non-hydrogel treatments (T9, T10, T13, T14) due to water retention properties of the BioBead carrier.
+
+2.  Empty bead treatments (T11, T12) will show intermediate moisture retention between BioBead and non-hydrogel treatments, confirming that moisture effects are attributable to the hydrogel carrier rather than microbial activity.
+
+3.  Soil moisture differences between hydrogel and non-hydrogel treatments will increase over time as plants grow and water demand increases (time series).
 
 # Results
 
@@ -243,7 +251,7 @@ tukey_wk6 <- TukeyHSD(x=anova_wk6, ordered=TRUE, conf.level=0.95)
 #print(tukey_wk6)
 ```
 
-Post-hoc pairwise comparisons did revealed significant differences between individual the following treatment groups:
+Post-hoc pairwise comparisons revealed significant differences between individual the following treatment groups:
 
 - Empty_Bead and SL_BioBead_Mixed (6.75%, p = 0.0279658)
 
@@ -335,7 +343,7 @@ tukey_wk8 <- TukeyHSD(x=anova_wk8, ordered=TRUE, conf.level=0.95)
 #print(tukey_wk8)
 ```
 
-Post-hoc pairwise comparisons did revealed significant differences between individual the following treatment groups:
+Post-hoc pairwise comparisons revealed significant differences between individual the following treatment groups:
 
 - BioBead_AMF and Fertilizer (6.44%, p = 0.0486592) - borderline
 

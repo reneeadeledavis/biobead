@@ -25,6 +25,18 @@ Unlike the other datasets, there isn't a distinct sample unit for each treatment
 
 For an initial analysis, the impact of treatments on each ion will be evaluate via ANOVA. It can be melded with week 6 soil moisture and nutrient leachate datasets for downstream multivariate analyses.
 
+## Hypotheses and Expectations
+
+1.  AMF-containing treatments (T2, T3, T4, T6) will show lower plant-available phosphate (PRS) compared to non-AMF treatments due to active P depletion via mycorrhizal uptake.
+
+2.  Bacterial inoculant treatments (T1, T3, T4, T5) will exhibit higher available NO₃⁻ at the PRS probes compared to controls due to nitrogen fixation activity.
+
+3.  Strigolactone-primed treatments (T4, T5, T6) will demonstrate greater nutrient depletion zones (lower PRS values for N and P) compared to non-primed equivalents due to enhanced microbial activity and plant-microbe associations.
+
+4.  Combined bacteria+AMF treatments (T3, T4) will show the lowest available N and P at PRS probes, reflecting most efficient nutrient capture and cycling.
+
+5.  Synthetic fertilizer (T13) will exhibit highest cation concentrations (Ca, Mg, K) initially, but lowest by week 8 due to rapid early availability followed by plant uptake and leaching losses.
+
 # Results
 
 ```{r, echo=FALSE, include=FALSE}
@@ -114,7 +126,7 @@ There were significant differences among the following treatment groups for nitr
 shapiro.test(anova_NO3$residuals)
 ```
 
-The W value and high p value indicate non-normality for residuals.
+The W value and high p value indicate residual normality.
 
 ### Residuals distribution
 
@@ -241,7 +253,7 @@ anova_P <- aov(Supply_rate ~ Treatment_Category, data = P_subset)
 summary(anova_P)
 ```
 
-There were no significant differences among treatment groups for nitrate supply rate (F stat (13,28) = 1.782, p = 0.0976).
+There were no significant differences among treatment groups for phosphate supply rate (F stat (13,28) = 1.782, p = 0.0976).
 
 ### Tukey Test
 
@@ -258,7 +270,7 @@ There were no significant differences among the following treatment groups for p
 shapiro.test(anova_P$residuals)
 ```
 
-The W value and high p value indicate boderline normality with residuals.
+The W value and high p value indicate normality with residuals.
 
 ### Residuals distribution
 

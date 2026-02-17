@@ -1,0 +1,297 @@
+---
+title: "Wheat Yield Data from 2025 Greenhouse Study"
+author: "Renee Davis"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  word_document: default
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    toc_float: true
+---
+
+[GitHub repository](https://github.com/reneeadeledavis/biobead/tree/main/2025greenhouse)
+
+# Methods
+
+## Sample Collection
+
+Wheat plants were grown to senescence and biomass, roots, and soil were collected at week 16. (Drying and processing specifications.)
+
+For the number of grain heads, empty grainheads were not recorded. That is, if a plant had 3 grain heads and 1 was empty, it was recorded and analyzed as 2.
+
+# Results
+
+```{r, echo=FALSE, include=FALSE}
+##Load packages
+library(ggstatsplot)
+library(ggplot2)
+library(reshape)
+library(dplyr)
+library(plotrix)
+library(see)
+library(ggpubr)
+
+##Read in data
+wheatyield_2025 <- read.csv("Wheat_Biomass_2025.csv", header = TRUE) %>%
+  filter(!is.na(Treatment) & Treatment != "") #in here because R was reading original empty cells and got downstream NaNs
+
+# Calculate summary statistics by treatment and sample period
+summary_data <- wheatyield_2025 %>%
+  group_by(Treatment) %>%
+  summarise(
+    
+    # GrainHeads 
+    mean_grainhead = mean(GrainHeads, na.rm = TRUE),
+    sd_grainhead = sd(GrainHeads, na.rm = TRUE),
+    se_grainhead = sd(GrainHeads, na.rm = TRUE) / sqrt(n()),
+    
+     # ABG_straw 
+    mean_abg_straw = mean(ABG_straw, na.rm = TRUE),
+    sd_abg_straw = sd(ABG_straw, na.rm = TRUE),
+    se_abg_straw = sd(ABG_straw, na.rm = TRUE) / sqrt(n()),
+    
+    # GrainHeadWeight
+    mean_grainhead_weight = mean(GrainHeadWeight_g, na.rm = TRUE),
+    sd_grainhead_weight = sd(GrainHeadWeight_g, na.rm = TRUE),
+    se_grainhead_weight = sd(GrainHeadWeight_g, na.rm = TRUE) / sqrt(n()),
+    
+    # GrainWeight
+    mean_grain_weight = mean(GrainWeight_g, na.rm = TRUE),
+    sd_grain_weight = sd(GrainWeight_g, na.rm = TRUE),
+    se_grain_weight = sd(GrainWeight_g, na.rm = TRUE) / sqrt(n()),
+    
+    # Harvest_Index
+    mean_harvest_index = mean(Harvest_Index, na.rm = TRUE),
+    sd_harvest_index = sd(Harvest_Index, na.rm = TRUE),
+    se_harvest_index = sd(Harvest_Index, na.rm = TRUE) / sqrt(n()),
+    
+    # Root_biomass
+    mean_root_biomass = mean(Root_biomass_g, na.rm = TRUE),
+    sd_root_biomass = sd(Root_biomass_g, na.rm = TRUE),
+    se_root_biomass = sd(Root_biomass_g, na.rm = TRUE) / sqrt(n()),
+    
+    # Root-Shoot ratio
+    mean_root_shoot = mean(Root_Shoot, na.rm = TRUE),
+    sd_root_shoot = sd(Root_Shoot, na.rm = TRUE),
+    se_root_shoot = sd(Root_Shoot, na.rm = TRUE) / sqrt(n()),
+    
+    n = n(),
+    .groups = 'drop'
+  )
+
+# Display summary statistics
+cat("=== Summary Statistics ===\n")
+print(summary_data, n = Inf)
+```
+
+## Grains
+
+### Number of Grain Heads
+
+```{r, echo=FALSE}
+ggplot(summary_data, aes(x = reorder(Treatment, mean_grainhead), y = mean_grainhead)) +
+  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8, color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = mean_grainhead - se_grainhead, ymax = mean_grainhead + se_grainhead),
+                width = 0.3, linewidth = 0.5) +
+  labs(
+    title = expression(bold("Number of Grain Heads")),
+    x = "Treatment",
+    y = expression(bold("Grain Head Count"))
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.x = element_text(face = "bold", size = 12, margin = margin(t = 10)),
+    axis.title.y = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+```
+
+### Grain Head Weight
+
+```{r, echo=FALSE}
+ggplot(summary_data, aes(x = reorder(Treatment, mean_grainhead_weight), y = mean_grainhead_weight)) +
+  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8, color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = mean_grainhead_weight - se_grainhead_weight, ymax = mean_grainhead_weight + se_grainhead_weight),
+                width = 0.3, linewidth = 0.5) +
+  labs(
+    title = expression(bold("Grain Head Weight")),
+    x = "Treatment",
+    y = expression(bold("Grain Head Weight (g)"))
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.x = element_text(face = "bold", size = 12, margin = margin(t = 10)),
+    axis.title.y = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+```
+
+### Grain Weight
+
+Grain head weight represents the total biomass of the spike, while individual grain weight refers to the mass of individual developed kernels.
+
+```{r, echo=FALSE}
+ggplot(summary_data, aes(x = reorder(Treatment, mean_grain_weight), y = mean_grain_weight)) +
+  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8, color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = mean_grain_weight - se_grain_weight, ymax = mean_grain_weight + se_grain_weight),
+                width = 0.3, linewidth = 0.5) +
+  labs(
+    title = expression(bold("Grain Weight")),
+    x = "Treatment",
+    y = expression(bold("Grain Weight (g)"))
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.x = element_text(face = "bold", size = 12, margin = margin(t = 10)),
+    axis.title.y = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+```
+
+```{r}
+anova_grainweight <- aov(GrainWeight_g ~ Treatment, data = wheatyield_2025)
+summary(anova_grainweight)
+```
+
+```{r, echo=FALSE}
+tukey_grainweight <- TukeyHSD(anova_grainweight)
+#print(tukey_grainweight)
+```
+
+```{r, include = FALSE}
+# Percentage change = (diff / mean of baseline group) × 100
+# (diff_Fert_BB_AMF / mean_BB_AMF) * 100
+# FertvsBBchange <- (-0.595714286/1.927143)*100
+# HgroBB_AMFchange <- (-0.578571429/1.927143)*100
+```
+
+BioBead with bacteria only is a top performing treatment with respect to grain weight. With AMF only, grain weight decreases slightly. With AMF and bacteria, grain weight decreases. A One Way ANOVA reveals statistically significant differences between treatments. A post-hoc Tukey HSD test identifies the following pairs as having statistically significant effects with respect to grain weight:
+
+-   Neg_ctr-BB_AMF (diff -0.791428571, p = 0.0458673)
+
+-   BB_reduced-BB_Bac (diff -0.844285714, p = 0.0231325)
+
+-   Fert-BB_Bac (diff = -0.805714286, p = 0.0383145)
+
+-   Hgro-BB_Bac (diff = -0.788571429, p = 0.0475256)
+
+-   Neg_ctr-BB_Bac (diff = -1.001428571, 0.0023191)
+
+## Harvest Index
+
+Harvest Index (HI) is an agricultural metric representing the efficiency of a crop in partitioning biomass into the harvestable economic yield. In the case of wheat, the economic yield is the grain weight. So this number represents grain weight divided by above ground straw and grain head weight.
+
+```{r, echo=FALSE}
+ggplot(summary_data, aes(x = reorder(Treatment, mean_harvest_index), y = mean_harvest_index)) +
+  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8, color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = mean_harvest_index - se_harvest_index, ymax = mean_harvest_index + se_harvest_index),
+                width = 0.3, linewidth = 0.5) +
+  labs(
+    title = expression(bold("Harvest Index")),
+    x = "Treatment",
+    y = expression(bold("Harvest Index"))
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.x = element_text(face = "bold", size = 12, margin = margin(t = 10)),
+    axis.title.y = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+```
+
+```{r}
+anova_harvest_index <- aov(Harvest_Index ~ Treatment, data = wheatyield_2025)
+summary(anova_harvest_index)
+```
+
+```{r, echo=FALSE}
+tukey_harvest_index <- TukeyHSD(anova_harvest_index)
+#print(tukey_harvest_index)
+```
+
+The BioBead with bacteria and AMF is the best performing treatment with HI. A One Way ANOVA reveals statistically significant differences between treatments. A post-hoc Tukey HSD test identifies the following pairs as having statistically significant effects with respect to grain weight:
+
+-   Fert-BB_AMF (diff = -0.1072086581, p = 0.0107640)
+
+-   Neg_ctr-BB_AMF (diff = -0.1306838019, p = 0.0004953)
+
+-   Neg_ctr-BB_Bac (diff = -0.1083843070, p = 0.0093394)
+
+-   Neg_ctr-BB_Bac_SL (diff = -0.1036589771, p = 0.0163740)
+
+-   BB_reduced-BB_Mix (diff = -0.1092990847, p = 0.0083542)
+
+-   Fert-BB_Mix (diff = -0.1406258417, p = 0.0001183)
+
+-   Liq-BB_Mix (diff = -0.1225708403, p = 0.0015140)
+
+-   Neg_ctr-BB_Mix (diff = -0.1641009854, p = 0.0000032)
+
+-   Neg_ctr-EB (diff = -0.0980049533, p = 0.0309877)
+
+-   Neg_ctr-Hgro (diff = -0.1024527209, p = 0.0188215)
+
+Most of the significant differences are between negative controls and other treatment groups. However, fertilizer treatments generally performed poorly compared to the biologicals, especially BioBead.
+
+## Root:Shoot Ratio
+
+The Root:Shoot ratio (R:S) is the ratio of dry root biomass to dry shoot biomass. It is as an indicator of plant health, nutrient efficiency, and resource allocation. Higher ratios (more roots) typically indicate stress (particularly drought/nutrient deficiency), while lower ratios (more shoots/above ground parts) suggest favorable, nutrient-rich environments.
+
+```{r, echo=FALSE}
+ggplot(summary_data, aes(x = reorder(Treatment, mean_root_shoot), y = mean_root_shoot)) +
+  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8, color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = mean_root_shoot - se_root_shoot, ymax = mean_root_shoot + se_root_shoot),
+                width = 0.3, linewidth = 0.5) +
+  labs(
+    title = expression(bold("Root:Shoot Ratio")),
+    x = "Treatment",
+    y = expression(bold("Root:Shoot Ratio"))
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.x = element_text(face = "bold", size = 12, margin = margin(t = 10)),
+    axis.title.y = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+```
+
+```{r}
+anova_root_shoot <- aov(Root_Shoot ~ Treatment, data = wheatyield_2025)
+summary(anova_root_shoot)
+```
+
+```{r, echo=FALSE}
+tukey_root_shoot <- TukeyHSD(anova_root_shoot)
+#print(tukey_root_shoot)
+```
+
+A One Way ANOVA reveals statistically significant differences between treatments. A post-hoc Tukey HSD test identifies that nearly every group has a statistically significant difference in R:S compared to negative control.
+
+# Discussion
+
+BioBead treatments, particularly those containing bacteria (BB_Bac) or the bacteria-AMF mixture (BB_Mix), significantly outperformed control and fertilizer treatments in grain weight and HI. BB_Bac produced higher grain weights than fertilizer, hydrogel, and negative control treatments, while BB_Mix demonstrated the highest harvest index efficiency, indicating superior biomass partitioning into grain yield.
+
+The negative control consistently underperformed across all BioBead formulations, suggesting that microbial inoculation provides substantial benefits to wheat productivity. R:S was significantly lower in nearly all treatments compared to the negative control, indicating that plants receiving microbial inoculants experienced less nutrient stress and allocated resources more efficiently toward above-ground growth and grain production.
+
+## Next steps
+
+1.  Plot residual histograms and QQ plots to verify normality with ANOVA error.
