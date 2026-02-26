@@ -3,9 +3,9 @@ title: 'BioBead Greenhouse Study: Analytical Methods'
 author: "Renee Davis"
 date: "`r Sys.Date()`"
 output:
-  html_document: default
-  word_document: default
   pdf_document: default
+  word_document: default
+  html_document: default
 editor_options:
   markdown:
     wrap: 72
@@ -60,7 +60,8 @@ one another. For groups that ventured into multivariate analyses, P**CAs
 and RDAs** were the techniques that were chosen.
 
 Analytical approaches like PERMANOVA and linear mixed effects models are
-used in other fertilizer/agricultural soil studies. Utilizing these
+used in other fertilizer/agricultural soil studies. Soonvald et al,
+(2019) used 9999 permutations in their analysis. Utilizing these
 analyses in a greenhouse study of biofertilizers would enhance the
 literature on microbial inoculants and soil effects and be a powerful
 contribution.
@@ -145,8 +146,14 @@ ecologically relevant timepoint. Euclidean distances would be used to
 create the distance matrix. The data would definitely need to be
 standardized (the scales are wildly different).
 
-Following this, I could bring in **RDA** to see what drives
-differentiation of these different responses.
+I would then follow this up with a PERMANOVA focusing on the hydrogel
+treatments in the study to test the hypothesis that the hydrogel carrier
+is associated with variation in soil physiochemical properties in this
+study. I would use 9999 permutations for publication-quality results on
+both of these.
+
+Finally, I could bring in **RDA** to see what drives differentiation of
+these different responses.
 
 ## Temporal analysis of soil properties
 
@@ -162,12 +169,10 @@ will suffice.
 
 ## Strigolactone and microbial interactions
 
-If time allows, it would be interesting to investigate the effects of
-strigolactone priming on key nutrients in the data set. The structure
-would be similar to that used for the hydrogel factor analysis. This can
-actually be a third factor in a **complex model** built from 2 factors
-(hydrogel and microbe type) from the first question. The design is
-unbalanced, so type III sum of squares would be appropriate.
+It would be interesting to investigate the effects of strigolactone
+priming on key nutrients in the data set. The structure would be similar
+to that used for the hydrogel factor analysis: a PERMANOVA focusing on
+strigolactone (GR24) presence or absence in a set of treatments.
 
 # References
 
@@ -191,6 +196,11 @@ Shen Z et al. 2015. Effect of biofertilizer for suppressing Fusarium
 wilt disease of banana as well as enhancing microbial and chemical
 properties of soil under greenhouse trial. Applied Soil Ecology.
 93:111–119. <https://doi.org/10.1016/j.apsoil.2015.04.013>
+
+Soonvald L et al. 2019. The role of long-term mineral and organic
+fertilisation treatment in changing pathogen and symbiont community
+composition in soil. Applied Soil Ecology. 141:45–53.
+<https://doi.org/10.1016/j.apsoil.2019.05.003>
 
 Wu SC et al. 2005. Effects of biofertilizer containing N-fixer, P and K
 solubilizers and AM fungi on maize growth: a greenhouse trial. Geoderma.

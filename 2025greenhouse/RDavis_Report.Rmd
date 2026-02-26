@@ -1,0 +1,33 @@
+---
+title: 'BioBead Greenhouse Study: Draft Report'
+author: "Renee Davis"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+# Introduction
+
+```{r}
+# load in data
+data <- read.csv("2025greenhousemaster.csv", header = TRUE, row.names = 1)
+N2O <- read.csv("gases/N2O_fluxdata.csv", header = TRUE) #row.name arguments?
+ions <- read.csv("ions/PRS_2025.csv", header = TRUE)
+```
+
+### Data transformation
+Some data are normally distributed (e.g. harvest index) but others (e.g leachates) are not. Therefore, I will relativize by range. 
+
+```{r message = FALSE}
+library(vegan)
+
+decostand(x = )
+decostand(x = )
+decostand(x = )
+```
+
