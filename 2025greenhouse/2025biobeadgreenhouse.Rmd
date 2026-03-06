@@ -127,7 +127,7 @@ flux](https://rpubs.com/reneedavis/1392995).
 ## Explanatory variables
 
 | Code | Full Name | Units | Range/Values |
-|------------------|------------------|------------------|------------------|
+|----|----|----|----|
 | Fungi | Arbuscular mycorrhizal fungi added | Binary | Present/absent |
 | Bacteria | Bacterial consortia added | Binary | Present/absent |
 | Hydrogel | BioBead hydrogel carrier | Binary | Present/absent |
@@ -195,8 +195,10 @@ commercial biofertilizer, and untreated negative control.
 ## Soil Properties NMDS
 
 ```{r}
-# load in data
 library(vegan)
+library(dplyr)
+
+# load in data
 data <- read.csv("2025greenhousemaster.csv", header = TRUE, row.names = 1)
 ions <- read.csv("ions/PRS_2025.csv", header = TRUE)
 
@@ -208,6 +210,7 @@ soil_properties_rel <- decostand(soil_properties, method = "max") ## Relativize 
 # create Euclidean distance matrix
 data_dist <- vegdist(soil_properties_rel, method = "euclidean")
 
+set.seed(1)
 nmds_result <- metaMDS(soil_properties_rel, 
                        distance = "euclidean", 
                        k = 3, 
@@ -215,15 +218,21 @@ nmds_result <- metaMDS(soil_properties_rel,
 nmds_result$stress
 
 #create data frame
-nmds_scores <- as.data.frame(scores(nmds_result, display = "sites"))
-nmds_scores$Treatment <- treatments
+cluster_df <- data.frame( 
+  label = rownames(data),
+  cluster = as.factor(data$Treatment_Category)
+)
+head(cluster_df)
+
+nmds_scores <- vegan::scores(nmds_result, tidy = TRUE) |> 
+  left_join(cluster_df, by = "label")
 
 # color palette 
 treatment_colors <- c(
   "BioBead_bac"             = "#084594",  # dark blue
   "BioBead_AMF"             = "#2171b5",  # mid blue
   "BioBead_Mixed"           = "#6baed6",  # light blue
-  "BioBead_Mixed_reduced"   = "#bdd7e7",  # very light blue (underdosed)
+  "BioBead_Mixed_reduced"   = "#bdd7e7",  # very light blue/underdosed
 
   "SL_BioBead_Bac"          = "#006d2c",  # dark green
   "SL_BioBead_AMF"          = "#31a354",  # mid green
@@ -242,10 +251,10 @@ treatment_colors <- c(
 
 #plot
 library(ggplot2)
-p1 <- ggplot(nmds_scores, aes(x = NMDS1, y = NMDS2, color = Treatment)) +
+p1 <- ggplot(nmds_scores, aes(x = NMDS1, y = NMDS2, colour = cluster)) +
   geom_point(size = 3) +
   scale_color_manual(values = treatment_colors) +
-  stat_ellipse(aes(group = Treatment), level = 0.95, linetype = "dashed", linewidth = 0.4) +  # potentially correct to ggforce (below), this assumes normal dist
+  stat_ellipse(aes(group = cluster), level = 0.95, linetype = "dashed", linewidth = 0.4) +  # potentially correct to ggforce (below), this assumes normal dist
   theme_bw() +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank()) +
@@ -267,8 +276,10 @@ wheat yield.
 ## Soil Ion NMDS
 
 ```{r}
+library(tidyr)
 # Load data
-ions <- read.csv("ions/PRS_2025.csv", header = TRUE)
+ions_na <- read.csv("ions/PRS_2025.csv", header = TRUE)
+ions <- drop_na(ions_na) # Remove rows with NA 
 
 # Subset
 ions_treatments <- ions$Treatment_Category
@@ -277,21 +288,28 @@ ions_properties <- ions[ , !colnames(ions) %in% c("Notes", "Treatment_Category")
 ions_rel <- decostand(ions_properties, method = "max") # Relativize by column maxima 
 
 # NMDS
+set.seed(1)
 nmds_ions <- metaMDS(ions_rel,
                      distance = "euclidean",
                      k = 3,
                      trymax = 100)
 nmds_ions$stress
 
-# Build scores data frame
-nmds_ions_scores <- as.data.frame(scores(nmds_ions, display = "sites"))
-nmds_ions_scores$Treatment <- ions_treatments
+#create data frame
+cluster_df_ions <- data.frame( 
+  label = rownames(ions),
+  cluster = as.factor(ions$Treatment_Category)
+)
+head(cluster_df_ions)
+
+nmds_scores_ions <- vegan::scores(nmds_ions, tidy = TRUE) |> 
+  left_join(cluster_df_ions, by = "label")
 
 library(ggforce)
-p2 <- ggplot(nmds_ions_scores, aes(x = NMDS1, y = NMDS2, color = Treatment)) +
+p2 <- ggplot(nmds_scores_ions, aes(x = NMDS1, y = NMDS2, colour = cluster)) +
   geom_point(size = 3) +
   scale_color_manual(values = treatment_colors) +
-  ggforce::geom_mark_ellipse(aes(group = Treatment), linetype = "dashed", linewidth = 0.4) +
+  ggforce::geom_mark_ellipse(aes(group = cluster), linetype = "dashed", linewidth = 0.4) +
   theme_bw() +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank()) +
@@ -334,7 +352,6 @@ no bench effects to account for.
 
 ```{r}
 
-
 # Filter to 3 treatments
 soil_sub <- soil_properties_rel[treatments %in% c("BioBead_Mixed", "Liquid_Mixed", "Empty_Bead"), ]
 treatments_sub <- treatments[treatments %in% c("BioBead_Mixed", "Liquid_Mixed", "Empty_Bead")]
@@ -343,10 +360,10 @@ treatments_sub <- treatments[treatments %in% c("BioBead_Mixed", "Liquid_Mixed", 
 dist_sub <- vegdist(soil_sub, method = "euclidean")
 
 # PERMANOVA
+set.seed(1)
 gel_permanova_result <- adonis2(dist_sub ~ treatments_sub, 
                                 permutations = 9999)
 gel_permanova_result
-
 ```
 
 In this test, the treatment group explained 28.8% of the multivariate
@@ -365,7 +382,7 @@ contributing something distinct rather than being interchangeable.
 I can use the approach of a two-factor PERMANOVA to understand how much
 variance is captured by the presence or absence of the hydrogel, the
 presence or absence of the microbes, and the interaction between the
-two. In order to do this, I manually create 2 additional columns in the
+two. In order to do this, I manually created 2 additional columns in the
 data files in Excel to indicate hydrogel Y/N and microbe Y/N. Treatments
 were coded with hydrogels and microbes even if present in small amounts
 (e.g. BioBead_Mixed_Reduced, HalfF_HalfBB). Hardygro was marked as
@@ -381,6 +398,7 @@ soil_properties <- data_gel2factor[ , !colnames(data_gel2factor) %in% c("Treatme
 soil_properties_rel <- decostand(soil_properties, method = "max")
 gel2factor_dist <- vegdist(soil_properties_rel, method = "euclidean")
 
+set.seed(1)
 gel_permanova_2way <- adonis2(
   gel2factor_dist ~ Hydrogel * Microbe,
   data = data_gel2factor,
@@ -394,11 +412,11 @@ The hydrogel accounts for only 6% of the variance in the responses (F =
 6.4098, p = 0.0003). The presence or absence of microbe accounts for 2%
 of the variance and is borderline significant (F = 2.1250, p = 0.0737).
 Together, their interaction accounts for 2.5% of the variance and is
-statistically significant (F = 2.6798, p = 0.0312). The R2 from Hydroge,
-Microbe, and their interaction is 10.7, meaning that these factors can
-explain 10.7% of the multivariate response. That is an interesting
-result: microbes alone don't significantly shift the multivariate
-profile, but microbes delivered via hydrogel do.
+statistically significant (F = 2.6798, p = 0.0312). The R2 from
+Hydrogel, Microbe, and their interaction is 10.7, meaning that these
+factors can explain 10.7% of the multivariate response. That is
+interesting that microbes alone don't significantly shift the
+multivariate profile, but microbes delivered via hydrogel do.
 
 ### RDA
 
@@ -429,6 +447,8 @@ legend("topright", legend = names(treatment_colors),
        col = treatment_colors, pch = 16, cex = 0.7)
 ```
 
+<!--# RDA axis breakdown analysis -->
+
 From this RDA, we can see a few trends. The Hydrogel (Y) arrow points to
 the upper left, and so does the interaction arrow (Hydrogel Y/Microbe
 Y). This means that the interaction is largely due to the hydrogel
@@ -437,20 +457,155 @@ The Microbe (Y) arrow points in a different direction, so it's separate
 from the hydrogel effect. The Fertilizer treatments group together, and
 is also in the opposite direction to MicrobeY.
 
-In examining the partioning of the variance, these these factors
+In examining the partitioning of the variance, these these factors
 (hydrogel and microbe) are only driving 10.7% of the multivariate
-response. This is consistent with the PERMANOVA R2 above.Therefore,
+response. This is consistent with the PERMANOVA R2 above. Therefore,
 Hydrogel and Microbe presence are meaningful predictors of soil
-physiochemical properties, but there are other drivers for the remaining
-89.3% of the multivariate response.
+physiochemical properties (leachate, moisture, and wheat yield), but
+there are other drivers for the remaining 89.3% of these multivariate
+responses.
 
 ## Soil ions
 
 ### PERMANOVA
 
+I will use the same PERMANOVA approach using these treatment categories:
+
+1.  T3 - BioBead - bacteria, AMF
+2.  T9 - Liquid consortia
+3.  T11 - Empty bead
+
+The hypothesis is that there are differences in soil ion supply rates
+for these different treatment groups. To do this, I will filter the
+dataset and make a new distance matrix. Same as above, the permutations
+not restricted, as the study utilized a randomized block design so there
+are no bench effects to account for.
+
+```{r}
+# Filter to 3 treatments
+ions_treatments <- ions$Treatment_Category
+ion_sub <- ions_rel[ions_treatments %in% c("BioBead_Mixed", "Liquid_Mixed", "Empty_Bead"), ]
+ion_treatments_sub <- ions_treatments[ions_treatments %in% c("BioBead_Mixed", "Liquid_Mixed", "Empty_Bead")]
+
+# Recompute distance matrix on subset
+ion_dist_sub <- vegdist(ion_sub, method = "euclidean")
+
+# PERMANOVA
+set.seed(1)
+ion_permanova_result <- adonis2(ion_dist_sub ~ ion_treatments_sub, 
+                                permutations = 9999)
+ion_permanova_result
+```
+
+In this test, the treatment group explained 63.4% of the multivariate
+variance (R² = 0.63383), with a highly significant F statistic (F =
+5.1929, p = 0.0037). This confirms the hypothesis that there are
+differences in soil ion supply rate in these different treatment groups.
+
+Practically, these data mean that the 3 treatment groups produce
+meaningfully different multivariate ion supply rates. Like in the soil
+physiochemical profile above, these three treatments isolate the carrier
+and microbial effects, so the separation suggests the hydrogel carrier
+and microbial consortia are each contributing something distinct rather
+than being interchangeable.
+
 ### Two-Factor PERMANOVA
 
+Using the same data modification approach in the previous section, I
+coded each treatment in the ion dataset with a Hydrogel Y/N and a
+Microbe Y/N for a Two-Factor ANOVA.
+
+```{r}
+ion_gel2factor <- read.csv("ions/PRS_2025_gel2factor.csv", header = TRUE, row.names = 1)
+
+# Subset 
+ion_properties <- ion_gel2factor[ , !colnames(ion_gel2factor) %in% c("Treatment_Category", "Hydrogel", "Microbe")]
+
+# Relativize/redo distance matrix
+ion_properties_rel <- decostand(ion_properties, method = "max")
+ion2factor_dist <- vegdist(ion_properties_rel, method = "euclidean")
+
+set.seed(1)
+ion_permanova_2way <- adonis2(
+  ion2factor_dist ~ Hydrogel * Microbe,
+  data = ion_gel2factor,
+  permutations = 9999,
+  by = "term"
+)
+ion_permanova_2way
+```
+
+<!--# More SS analysis-->
+
+Similar to the other multivariate responses in the previous section, the
+hydrogel accounts for only 6% of the variance in the responses (F =
+2.7518, p = 0.0129). The presence or absence of microbe accounts for 4%
+of the variance and is borderline significant (F = 1.8686, p = 0.0760).
+Together, their interaction accounts for 4% of the variance but is not
+statistically significant (F = 1.7768, p = 0.0832). So the presence of
+the Microbe is not significant in terms of its impacts on the soil ion
+supply rate. It is worth noting that there are fewer sample units
+compared to soil physiochemical properties (42 instead of 98), so the
+lack of significance may be a result of a comparatively under-powered
+test.
+
 ### RDA
+
+```{r}
+ion_rda <- rda(
+  ion_properties_rel ~ Hydrogel * Microbe,
+  data = ion_gel2factor,
+  scale = FALSE  
+)
+summary(ion_rda)
+
+# Significance test of the full model
+set.seed(1)
+anova(ion_rda, permutations = 9999)
+
+anova(ion_rda, by = "term", permutations = 9999)
+
+# Plot (run together)
+plot(ion_rda, type = "n")
+points(ion_rda, display = "sites", 
+       col = treatment_colors[ion_gel2factor$Treatment_Category], 
+       pch = 16, cex = 1.2)
+text(ion_rda, display = "bp", col = "red")  # arrows for explanatory variables
+legend("topright", legend = names(treatment_colors), 
+       col = treatment_colors, pch = 16, cex = 0.7)
+```
+
+<!--# Why are there 2 MicrobeY arrows? -->
+
+In examining the breakdowns of the RDA axes, RDA1 explains 9.7% of the
+variation (F = 2.1324, p = 0.0062) and there is a nice separation of
+treatments along this axis. RDA2 picks up another 3.6%, and RDA3 another
+1.2%. There is still significant variation found in the unconstrained
+axes (\~86%) that is not explained by Hydrogel or Microbe factors.
+
+The arrows for Hydrogel and Microbe are pointing in similar directions,
+meaning that these explanatory variables are correlated with each other
+and driving similar patterns in the ion supply rate responses. It is
+worth noting that treatments that have microbes but no hydrogel are few
+in this data set (Liquid_Mixed, HardyGro). As a result of this design,
+it may be difficult to complelety detangle these factors. It could be
+worthwhile to remove some lower priority treatment categories like
+HalfFert_HalfBB, BB_Mixed_Reduced to balance the analysis for a cleaner
+interpretation.
+
+The proportion of constrained variance is 0.1441 or 14.41%, meaning that
+Hydrogel + Microbe and their interactions account for 14% of the
+variation in response of this system. This is higher than 10.7% with the
+leachate, moisture, and wheat yield responses in the previous section.
+So these factors are having a stronger influence on soil ion dynamics
+than these other response variables. It makes biological sense that
+microbial activity and hydrogel water retention woud have more direct
+effects on ion exchange at the root zone than on other metrics.
+
+The ion data in general may be telling a cleaner story. The PRS probes
+are gathering ion exchange near the rhizosphere over a 2-week period. It
+is closer to the nutrient exchange occuring between microbes and plant
+roots than leachate, moisture, and wheat yield.
 
 # References
 
@@ -458,6 +613,11 @@ Besserer A et al. 2008. GR24, a Synthetic Analog of Strigolactones,
 Stimulates the Mitosis and Growth of the Arbuscular Mycorrhizal Fungus
 Gigaspora rosea by Boosting Its Energy Metabolism. Plant Physiology.
 2008;148(1):402–413. <https://doi.org/10.1104/pp.108.121400> s
+
+Brideau, L. 2023. “Starting with Non-Metric Multidimensional Scaling
+(NMDS) .” *UVA Library StatLab*.
+<https://library.virginia.edu/data/articles/starting-non-metric-multidimensional-scaling-nmds>
+(accessed February 25, 2026).
 
 Jariani P, Sabokdast M, Rajabi F, Naghavi MR, Dedicova B. Enhancing
 salinity tolerance in wheat: the role of synthetic Strigolactone (GR24)
