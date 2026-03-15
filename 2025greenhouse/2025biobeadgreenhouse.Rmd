@@ -1,10 +1,13 @@
 ---
-title: "BioBead Greenhouse Study Soil Analysis Project Overview"
+title: Detangling Hydrogel and Microbial Effects of BioBead on Soil Physiochemical
+  Properties and Wheat Yield
 author: "Renee Davis"
 date: "`r Sys.Date()`"
 output:
-  html_document: default
   word_document: default
+  pdf_document: 
+    latex_engine: xelatex
+  html_document: default
 editor_options:
   markdown:
     wrap: 72
@@ -33,6 +36,17 @@ different intervals will have to be analyzed separately, or combined in
 another manner. These results will provide a foundation for expansion
 into larger field trials and BioBead formulation improvements in 2026
 and beyond, and hopefully become publications and dissertation chapters.
+
+## Research Questions
+
+1.  Does the hydrogel carrier in BioBead explain variation in the soil
+    geochemical profile and wheat yield?
+
+2.  How does the interaction of the hydrogel and microbes explain
+    variation in the soil geochemical profile and wheat yield?
+
+3.  What are the principle components driving variation in these
+    multivariate soil responses?
 
 # Methods
 
@@ -199,8 +213,8 @@ library(vegan)
 library(dplyr)
 
 # load in data
-data <- read.csv("2025greenhousemaster.csv", header = TRUE, row.names = 1)
-ions <- read.csv("ions/PRS_2025.csv", header = TRUE)
+data <- read.csv("2025greenhousemaster_hydrogel.csv", header = TRUE, row.names = 1)
+ions <- read.csv("ions/PRS_2025_hydrogel.csv", header = TRUE)
 
 # Subset response and explanatory variables
 treatments <- data$Treatment_Category
@@ -225,27 +239,15 @@ cluster_df <- data.frame(
 head(cluster_df)
 
 nmds_scores <- vegan::scores(nmds_result, tidy = TRUE) |> 
+  filter(score == "sites") |> 
   left_join(cluster_df, by = "label")
 
 # color palette 
 treatment_colors <- c(
-  "BioBead_bac"             = "#084594",  # dark blue
-  "BioBead_AMF"             = "#2171b5",  # mid blue
-  "BioBead_Mixed"           = "#6baed6",  # light blue
-  "BioBead_Mixed_reduced"   = "#bdd7e7",  # very light blue/underdosed
+  "BioBead"           = "#CDEE40FF",  # yellow-green
 
-  "SL_BioBead_Bac"          = "#006d2c",  # dark green
-  "SL_BioBead_AMF"          = "#31a354",  # mid green
-  "SL_BioBead_Mixed"        = "#74c476",  # light green
-
-  "Empty_Bead"              = "#6a51a3",  # dark purple
-  "SL_Empty_Bead"           = "#9e9ac8",  # light purple
-
-  "HalfF_HalfBB"            = "#fe9929",  # orange (bridge between BB and fert)
-  "Liquid_Mixed"            = "#964B00",  # brown
-  "HardyGro_Competitor"     = "#969696",  # gray
-
-  "Fertilizer"              = "#e6550d",  # red-orange (positive control)
+  "Hydrogel"              = "#8BD4F7FF",  # grey
+  "Microbe_Liquid"            = "#E96C0CFF",  # red-orange
   "Negative"                = "#000000"   # black (negative control)
 )
 
@@ -253,13 +255,13 @@ treatment_colors <- c(
 library(ggplot2)
 p1 <- ggplot(nmds_scores, aes(x = NMDS1, y = NMDS2, colour = cluster)) +
   geom_point(size = 3) +
-  scale_color_manual(values = treatment_colors) +
+  scale_color_manual(values = treatment_colors, name = "Treatment Group") +
   stat_ellipse(aes(group = cluster), level = 0.95, linetype = "dashed", linewidth = 0.4) +  # potentially correct to ggforce (below), this assumes normal dist
   theme_bw() +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank()) +
   labs(x = "NMDS1", y = "NMDS2",
-       caption = "Figure 1: NMDS Ordination of Nutrient Leachate, Soil Moisture, and Wheat Yield based on Treatment Categories")
+       caption = "Figure 1: NMDS Ordination of Leachate, Soil Moisture, and Wheat Yield")
 
 p1
 ```
@@ -278,20 +280,20 @@ wheat yield.
 ```{r}
 library(tidyr)
 # Load data
-ions_na <- read.csv("ions/PRS_2025.csv", header = TRUE)
-ions <- drop_na(ions_na) # Remove rows with NA 
+ions <- read.csv("ions/PRS_2025_hydrogel.csv", header = TRUE, row.names = 1)
 
 # Subset
 ions_treatments <- ions$Treatment_Category
-ions_properties <- ions[ , !colnames(ions) %in% c("Notes", "Treatment_Category")]
+ions_properties <- ions[ , !colnames(ions) %in% "Treatment_Category"]
+ions_rel <- decostand(ions_properties, method = "max")
 
-ions_rel <- decostand(ions_properties, method = "max") # Relativize by column maxima 
+# Create Euclidean distance matrix
+ions_dist <- vegdist(ions_rel, method = "euclidean")
 
 # NMDS
 set.seed(1)
-nmds_ions <- metaMDS(ions_rel,
-                     distance = "euclidean",
-                     k = 3,
+nmds_ions <- metaMDS(ions_dist,
+                     k = 2,
                      trymax = 100)
 nmds_ions$stress
 
@@ -303,13 +305,14 @@ cluster_df_ions <- data.frame(
 head(cluster_df_ions)
 
 nmds_scores_ions <- vegan::scores(nmds_ions, tidy = TRUE) |> 
+  filter(score == "sites") |> 
   left_join(cluster_df_ions, by = "label")
 
 library(ggforce)
 p2 <- ggplot(nmds_scores_ions, aes(x = NMDS1, y = NMDS2, colour = cluster)) +
   geom_point(size = 3) +
-  scale_color_manual(values = treatment_colors) +
-  ggforce::geom_mark_ellipse(aes(group = cluster), linetype = "dashed", linewidth = 0.4) +
+  scale_color_manual(values = treatment_colors, name = "Treatment Group") +
+  stat_ellipse(aes(group = cluster), level = 0.95, linetype = "dashed", linewidth = 0.4) +
   theme_bw() +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank()) +
@@ -343,31 +346,22 @@ categories:
 1.  T3 - BioBead - bacteria, AMF
 2.  T9 - Liquid consortia
 3.  T11 - Empty bead
+4.  T14 - Negative control
 
 The hypothesis is that there are differences in soil physiochemical
-properties for these different treatment groups. To do this, I will
-filter the dataset and make a new distance matrix. Permutations not
+properties for these different treatment groups. Permutations not
 restricted, as the study utilized a randomized block design so there are
 no bench effects to account for.
 
 ```{r}
-
-# Filter to 3 treatments
-soil_sub <- soil_properties_rel[treatments %in% c("BioBead_Mixed", "Liquid_Mixed", "Empty_Bead"), ]
-treatments_sub <- treatments[treatments %in% c("BioBead_Mixed", "Liquid_Mixed", "Empty_Bead")]
-
-# Recompute distance matrix on subset
-dist_sub <- vegdist(soil_sub, method = "euclidean")
-
-# PERMANOVA
 set.seed(1)
-gel_permanova_result <- adonis2(dist_sub ~ treatments_sub, 
+gel_permanova_result <- adonis2(data_dist ~ treatments, 
                                 permutations = 9999)
 gel_permanova_result
 ```
 
-In this test, the treatment group explained 28.8% of the multivariate
-variance (R² = 0.288), with a highly significant F statistic (F = 3.65,
+In this test, the treatment group explained 32.8% of the multivariate
+variance (R² = 0.328), with a highly significant F statistic (F = 4.386,
 p = 0.0001). This confirms the hypothesis that there are differences in
 soil physiochemical properties in these different treatment groups.
 
@@ -408,15 +402,13 @@ gel_permanova_2way <- adonis2(
 gel_permanova_2way
 ```
 
-The hydrogel accounts for only 6% of the variance in the responses (F =
-6.4098, p = 0.0003). The presence or absence of microbe accounts for 2%
-of the variance and is borderline significant (F = 2.1250, p = 0.0737).
-Together, their interaction accounts for 2.5% of the variance and is
-statistically significant (F = 2.6798, p = 0.0312). The R2 from
-Hydrogel, Microbe, and their interaction is 10.7, meaning that these
-factors can explain 10.7% of the multivariate response. That is
-interesting that microbes alone don't significantly shift the
-multivariate profile, but microbes delivered via hydrogel do.
+The hydrogel accounts for 13.9% of the variance in the responses (F =
+8.4106, p = 0.0001). The presence or absence of microbe accounts for
+9.8% of the variance and is also highly significant (F = 5.9437, p =
+0.0001). Together, their interaction accounts for 2% of the variance but
+is not statistically significant (F = 1.1914, p = 0.3069). The R2 from
+Hydrogel, Microbe, and their interaction is 0.25676, meaning that these
+factors can explain 25.7% of the multivariate response.
 
 ### RDA
 
@@ -442,12 +434,16 @@ plot(gel_rda, type = "n")
 points(gel_rda, display = "sites", 
        col = treatment_colors[data_gel2factor$Treatment_Category], 
        pch = 16, cex = 1.2)
-text(gel_rda, display = "bp", col = "red")  # arrows for explanatory variables
+text(gel_rda, display = "bp", col = "#1927DDFF")  # arrows for explanatory variables
 legend("topright", legend = names(treatment_colors), 
        col = treatment_colors, pch = 16, cex = 0.7)
+mtext("Figure 3: RDA of Soil and Yield Properties constrained by Hydrogel and Microbe presence", 
+      side = 1, # bottom of plot
+      line = 4, # how far below the axis
+      cex = 0.8) # font size
 ```
 
-<!--# RDA axis breakdown analysis -->
+<!--# RDA axis breakdown - update this section -->
 
 From this RDA, we can see a few trends. The Hydrogel (Y) arrow points to
 the upper left, and so does the interaction arrow (Hydrogel Y/Microbe
@@ -458,12 +454,65 @@ from the hydrogel effect. The Fertilizer treatments group together, and
 is also in the opposite direction to MicrobeY.
 
 In examining the partitioning of the variance, these these factors
-(hydrogel and microbe) are only driving 10.7% of the multivariate
-response. This is consistent with the PERMANOVA R2 above. Therefore,
-Hydrogel and Microbe presence are meaningful predictors of soil
-physiochemical properties (leachate, moisture, and wheat yield), but
-there are other drivers for the remaining 89.3% of these multivariate
-responses.
+(hydrogel and microbe) are driving 23.9% of the multivariate response.
+This is consistent with the PERMANOVA R2 above. Therefore, Hydrogel and
+Microbe presence are meaningful predictors of soil physiochemical
+properties (leachate, moisture, and wheat yield), but there are other
+drivers for the remaining 75% of these multivariate responses.
+
+### PCA
+
+```{r}
+library(tidyverse)
+# Uses soil_properties_rel already built above
+# scale = TRUE equalizes variance across variables (z-score equivalent)
+soil_pca <- rda(soil_properties_rel, scale = TRUE)
+
+# How much variance does each PC explain?
+summary(soil_pca)
+
+# Scree plot - where does variance flatten out?
+screeplot(soil_pca, bstick = TRUE, type = "lines",
+          main = "PCA Screeplot - Soil Properties")
+
+# Extract proportion of variance for axis labels
+pca_summary <- summary(soil_pca)
+pc1_var <- round(pca_summary$cont$importance[2,1] * 100, 1)  # % variance PC1
+pc2_var <- round(pca_summary$cont$importance[2,2] * 100, 1)  # % variance PC2
+
+# Build scores data frame (same pattern as NMDS)
+pca_scores <- vegan::scores(soil_pca, tidy = TRUE) |>
+  filter(score == "sites") |>
+  left_join(cluster_df, by = "label")
+
+# Extract species (variable) scores for arrows
+pca_arrows <- vegan::scores(soil_pca, display = "species") |>
+  as.data.frame() |>
+  rownames_to_column("variable")
+
+# Plot
+p_pca <- ggplot(pca_scores, aes(x = PC1, y = PC2, colour = cluster)) +
+  geom_point(size = 3) +
+  scale_color_manual(values = treatment_colors, name = "Treatment Group") +
+  # Add variable arrows
+  geom_segment(data = pca_arrows,
+               aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               arrow = arrow(length = unit(0.2, "cm")),
+               color = "darkgray", inherit.aes = FALSE) +
+  geom_text(data = pca_arrows,
+            aes(x = PC1 * 1.15, y = PC2 * 1.15, label = variable),
+            color = "darkgray", size = 3, inherit.aes = FALSE) +
+  stat_ellipse(aes(group = cluster), level = 0.95, 
+               linetype = "dashed", linewidth = 0.4) +
+  theme_bw() +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank()) +
+  labs(x = paste0("PC1 (", pc1_var, "%)"),
+       y = paste0("PC2 (", pc2_var, "%)"),
+       caption = "Figure 5: PCA of Soil Physiochemical Properties and Wheat Yield")
+
+p_pca
+```
 
 ## Soil ions
 
@@ -482,24 +531,18 @@ not restricted, as the study utilized a randomized block design so there
 are no bench effects to account for.
 
 ```{r}
-# Filter to 3 treatments
-ions_treatments <- ions$Treatment_Category
-ion_sub <- ions_rel[ions_treatments %in% c("BioBead_Mixed", "Liquid_Mixed", "Empty_Bead"), ]
-ion_treatments_sub <- ions_treatments[ions_treatments %in% c("BioBead_Mixed", "Liquid_Mixed", "Empty_Bead")]
-
-# Recompute distance matrix on subset
-ion_dist_sub <- vegdist(ion_sub, method = "euclidean")
-
 # PERMANOVA
 set.seed(1)
-ion_permanova_result <- adonis2(ion_dist_sub ~ ion_treatments_sub, 
+ion_permanova_result <- adonis2(ions_dist ~ ions_treatments, 
                                 permutations = 9999)
 ion_permanova_result
 ```
 
-In this test, the treatment group explained 63.4% of the multivariate
-variance (R² = 0.63383), with a highly significant F statistic (F =
-5.1929, p = 0.0037). This confirms the hypothesis that there are
+<!--# update this section -->
+
+In this test, the treatment group explained 59.7% of the multivariate
+variance (R² = 0.59729), with a highly significant F statistic (F =
+4.4496, p = 0.0037). This confirms the hypothesis that there are
 differences in soil ion supply rate in these different treatment groups.
 
 Practically, these data mean that the 3 treatment groups produce
@@ -519,7 +562,8 @@ Microbe Y/N for a Two-Factor ANOVA.
 ion_gel2factor <- read.csv("ions/PRS_2025_gel2factor.csv", header = TRUE, row.names = 1)
 
 # Subset 
-ion_properties <- ion_gel2factor[ , !colnames(ion_gel2factor) %in% c("Treatment_Category", "Hydrogel", "Microbe")]
+ion_properties <- ion_gel2factor[ , !colnames(ion_gel2factor) %in% 
+                                    c("Treatment_Category", "Hydrogel", "Microbe")]
 
 # Relativize/redo distance matrix
 ion_properties_rel <- decostand(ion_properties, method = "max")
@@ -538,12 +582,13 @@ ion_permanova_2way
 <!--# More SS analysis-->
 
 Similar to the other multivariate responses in the previous section, the
-hydrogel accounts for only 6% of the variance in the responses (F =
-2.7518, p = 0.0129). The presence or absence of microbe accounts for 4%
-of the variance and is borderline significant (F = 1.8686, p = 0.0760).
-Together, their interaction accounts for 4% of the variance but is not
-statistically significant (F = 1.7768, p = 0.0832). So the presence of
-the Microbe is not significant in terms of its impacts on the soil ion
+hydrogel accounts for only 6.7% of the variance in the responses (F =
+1.8652, p = 0.0908). But this result is not statistically significant.
+The presence or absence of microbe accounts for 14.4% of the variance
+and is very significant (F = 3.5212, p = 0.0070). Together, their
+interaction accounts for 8.6% of the variance and is borderline
+statistically significant (F = 2.1102, p = 0.0613). So the presence of
+the hydrogel is not significant in terms of its impacts on the soil ion
 supply rate. It is worth noting that there are fewer sample units
 compared to soil physiochemical properties (42 instead of 98), so the
 lack of significance may be a result of a comparatively under-powered
@@ -562,7 +607,6 @@ summary(ion_rda)
 # Significance test of the full model
 set.seed(1)
 anova(ion_rda, permutations = 9999)
-
 anova(ion_rda, by = "term", permutations = 9999)
 
 # Plot (run together)
@@ -570,12 +614,16 @@ plot(ion_rda, type = "n")
 points(ion_rda, display = "sites", 
        col = treatment_colors[ion_gel2factor$Treatment_Category], 
        pch = 16, cex = 1.2)
-text(ion_rda, display = "bp", col = "red")  # arrows for explanatory variables
-legend("topright", legend = names(treatment_colors), 
+text(ion_rda, display = "bp", col = "#1927DDFF")  # arrows for explanatory variables
+legend("bottomleft", legend = names(treatment_colors), 
        col = treatment_colors, pch = 16, cex = 0.7)
+mtext("Figure 4: RDA of Soil Ion Supply Rate constrained by Hydrogel and Microbe presence", 
+      side = 1, # bottom of plot
+      line = 4, # how far below the axis
+      cex = 0.8) # font size
 ```
 
-<!--# Why are there 2 MicrobeY arrows? -->
+<!--# Update this section-->
 
 In examining the breakdowns of the RDA axes, RDA1 explains 9.7% of the
 variation (F = 2.1324, p = 0.0062) and there is a nice separation of
@@ -599,13 +647,71 @@ variation in response of this system. This is higher than 10.7% with the
 leachate, moisture, and wheat yield responses in the previous section.
 So these factors are having a stronger influence on soil ion dynamics
 than these other response variables. It makes biological sense that
-microbial activity and hydrogel water retention woud have more direct
+microbial activity and hydrogel water retention would have more direct
 effects on ion exchange at the root zone than on other metrics.
 
 The ion data in general may be telling a cleaner story. The PRS probes
 are gathering ion exchange near the rhizosphere over a 2-week period. It
 is closer to the nutrient exchange occuring between microbes and plant
 roots than leachate, moisture, and wheat yield.
+
+### PCA
+
+```{r}
+# Uses soil_properties_rel already built above
+# scale = TRUE equalizes variance across variables (z-score equivalent)
+ion_pca <- rda(ion_properties_rel, scale = TRUE)
+
+# How much variance does each PC explain?
+summary(ion_pca)
+
+# Scree plot - where does variance flatten out?
+screeplot(ion_pca, bstick = TRUE, type = "lines",
+          main = "PCA Screeplot - Ion Properties")
+
+# Extract proportion of variance for axis labels
+ionpca_summary <- summary(ion_pca)
+ionpc1_var <- round(ionpca_summary$cont$importance[2,1] * 100, 1)  # % variance PC1
+ionpc2_var <- round(ionpca_summary$cont$importance[2,2] * 100, 1)  # % variance PC2
+
+cluster_df_ions <- data.frame(
+  label = rownames(ion_properties_rel),
+  cluster = as.factor(ion_gel2factor$Treatment_Category)
+)
+
+# Build scores data frame (same pattern as NMDS)
+ionpca_scores <- vegan::scores(ion_pca, tidy = TRUE) |>
+  filter(score == "sites") |>
+  left_join(cluster_df_ions, by = "label")
+
+# Extract species (variable) scores for arrows
+ionpca_arrows <- vegan::scores(ion_pca, display = "species") |>
+  as.data.frame() |>
+  rownames_to_column("variable")
+
+# Plot
+ionp_pca <- ggplot(ionpca_scores, aes(x = PC1, y = PC2, colour = cluster)) +
+  geom_point(size = 3) +
+  scale_color_manual(values = treatment_colors, name = "Treatment Group") +
+  # Add variable arrows
+  geom_segment(data = ionpca_arrows,
+               aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               arrow = arrow(length = unit(0.2, "cm")),
+               color = "darkgray", inherit.aes = FALSE) +
+  geom_text(data = ionpca_arrows,
+            aes(x = PC1 * 1.15, y = PC2 * 1.15, label = variable),
+            color = "darkgray", size = 3, inherit.aes = FALSE) +
+  stat_ellipse(aes(group = cluster), level = 0.95, 
+               linetype = "dashed", linewidth = 0.4) +
+  theme_bw() +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank()) +
+  labs(x = paste0("PC1 (", ionpc1_var, "%)"),
+       y = paste0("PC2 (", ionpc2_var, "%)"),
+       caption = "Figure 6: PCA of Soil Ion Supply Rate")
+
+ionp_pca
+```
 
 # References
 
