@@ -29,6 +29,7 @@ For the number of grain heads, empty grainheads were not recorded. That is, if a
 ##Load packages
 library(ggstatsplot)
 library(ggplot2)
+library(RColorBrewer)
 library(reshape)
 library(dplyr)
 library(plotrix)
@@ -86,6 +87,17 @@ summary_data <- wheatyield_2025 %>%
 # Display summary statistics
 cat("=== Summary Statistics ===\n")
 print(summary_data, n = Inf)
+
+# Set color palette
+treatment_colors <- c(
+  "BioBead"        = "#8DD3C7",
+  "BioBead_SL"     = "#BEBADA",
+  "Fertilizer"     = "#FB8072",
+  "Microbes_Liquid" = "#FFFFB3",  
+  "Hardygro"       = "#FDB462",
+  "Hydrogel"       = "#80B1D3",
+  "Neg_ctrl"       = "#D9D9D9"    
+)
 ```
 
 ## Grains
@@ -95,6 +107,7 @@ print(summary_data, n = Inf)
 ```{r, echo=FALSE}
 ggplot(summary_data, aes(x = reorder(Treatment, mean_grainhead), y = mean_grainhead)) +
   geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8, color = "black", linewidth = 0.3) +
+  scale_color_brewer(palette = "Set3") +
   geom_errorbar(aes(ymin = mean_grainhead - se_grainhead, ymax = mean_grainhead + se_grainhead),
                 width = 0.3, linewidth = 0.5) +
   labs(
@@ -116,9 +129,13 @@ ggplot(summary_data, aes(x = reorder(Treatment, mean_grainhead), y = mean_grainh
 ### Grain Head Weight
 
 ```{r, echo=FALSE}
-ggplot(summary_data, aes(x = reorder(Treatment, mean_grainhead_weight), y = mean_grainhead_weight)) +
-  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8, color = "black", linewidth = 0.3) +
-  geom_errorbar(aes(ymin = mean_grainhead_weight - se_grainhead_weight, ymax = mean_grainhead_weight + se_grainhead_weight),
+ggplot(summary_data, aes(x = reorder(Treatment, mean_grainhead_weight), 
+                          y = mean_grainhead_weight,
+                          fill = Treatment)) +  
+  geom_bar(stat = "identity", alpha = 0.8, color = "black", linewidth = 0.3) +  
+  scale_fill_brewer(palette = "Set3") +  
+  geom_errorbar(aes(ymin = mean_grainhead_weight - se_grainhead_weight, 
+                    ymax = mean_grainhead_weight + se_grainhead_weight),
                 width = 0.3, linewidth = 0.5) +
   labs(
     title = expression(bold("Grain Head Weight")),
@@ -126,6 +143,7 @@ ggplot(summary_data, aes(x = reorder(Treatment, mean_grainhead_weight), y = mean
     y = expression(bold("Grain Head Weight (g)"))
   ) +
   theme_bw(base_size = 12) +
+  guides(fill = "none") +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
     axis.title.x = element_text(face = "bold", size = 12, margin = margin(t = 10)),
@@ -141,9 +159,13 @@ ggplot(summary_data, aes(x = reorder(Treatment, mean_grainhead_weight), y = mean
 Grain head weight represents the total biomass of the spike, while individual grain weight refers to the mass of individual developed kernels.
 
 ```{r, echo=FALSE}
-ggplot(summary_data, aes(x = reorder(Treatment, mean_grain_weight), y = mean_grain_weight)) +
-  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8, color = "black", linewidth = 0.3) +
-  geom_errorbar(aes(ymin = mean_grain_weight - se_grain_weight, ymax = mean_grain_weight + se_grain_weight),
+ggplot(summary_data, aes(x = reorder(Treatment, mean_grain_weight), 
+                          y = mean_grain_weight,
+                          fill = Treatment)) +  
+  geom_bar(stat = "identity", alpha = 0.8, color = "black", linewidth = 0.3) +  
+  scale_fill_manual(values = treatment_colors) +  # <-- swap here
+  geom_errorbar(aes(ymin = mean_grain_weight - se_grain_weight, 
+                    ymax = mean_grain_weight + se_grain_weight),
                 width = 0.3, linewidth = 0.5) +
   labs(
     title = expression(bold("Grain Weight")),
@@ -151,6 +173,7 @@ ggplot(summary_data, aes(x = reorder(Treatment, mean_grain_weight), y = mean_gra
     y = expression(bold("Grain Weight (g)"))
   ) +
   theme_bw(base_size = 12) +
+  guides(fill = "none") +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
     axis.title.x = element_text(face = "bold", size = 12, margin = margin(t = 10)),
@@ -195,9 +218,13 @@ BioBead with bacteria only is a top performing treatment with respect to grain w
 Harvest Index (HI) is an agricultural metric representing the efficiency of a crop in partitioning biomass into the harvestable economic yield. In the case of wheat, the economic yield is the grain weight. So this number represents grain weight divided by above ground straw and grain head weight.
 
 ```{r, echo=FALSE}
-ggplot(summary_data, aes(x = reorder(Treatment, mean_harvest_index), y = mean_harvest_index)) +
-  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8, color = "black", linewidth = 0.3) +
-  geom_errorbar(aes(ymin = mean_harvest_index - se_harvest_index, ymax = mean_harvest_index + se_harvest_index),
+ggplot(summary_data, aes(x = reorder(Treatment, mean_harvest_index), 
+                          y = mean_harvest_index,
+                          fill = Treatment)) +  
+  geom_bar(stat = "identity", alpha = 0.8, color = "black", linewidth = 0.3) +  
+  scale_fill_manual(values = treatment_colors) +  # <-- swap here
+  geom_errorbar(aes(ymin = mean_harvest_index - se_harvest_index, 
+                    ymax = mean_harvest_index + se_harvest_index),
                 width = 0.3, linewidth = 0.5) +
   labs(
     title = expression(bold("Harvest Index")),
@@ -205,6 +232,7 @@ ggplot(summary_data, aes(x = reorder(Treatment, mean_harvest_index), y = mean_ha
     y = expression(bold("Harvest Index"))
   ) +
   theme_bw(base_size = 12) +
+  guides(fill = "none") +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
     axis.title.x = element_text(face = "bold", size = 12, margin = margin(t = 10)),
@@ -254,9 +282,13 @@ Most of the significant differences are between negative controls and other trea
 The Root:Shoot ratio (R:S) is the ratio of dry root biomass to dry shoot biomass. It is as an indicator of plant health, nutrient efficiency, and resource allocation. Higher ratios (more roots) typically indicate stress (particularly drought/nutrient deficiency), while lower ratios (more shoots/above ground parts) suggest favorable, nutrient-rich environments.
 
 ```{r, echo=FALSE}
-ggplot(summary_data, aes(x = reorder(Treatment, mean_root_shoot), y = mean_root_shoot)) +
-  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8, color = "black", linewidth = 0.3) +
-  geom_errorbar(aes(ymin = mean_root_shoot - se_root_shoot, ymax = mean_root_shoot + se_root_shoot),
+ggplot(summary_data, aes(x = reorder(Treatment, mean_root_shoot), 
+                          y = mean_root_shoot,
+                          fill = Treatment)) +  
+  geom_bar(stat = "identity", alpha = 0.8, color = "black", linewidth = 0.3) +  
+  scale_fill_manual(values = treatment_colors) +  
+  geom_errorbar(aes(ymin = mean_root_shoot - se_root_shoot, 
+                    ymax = mean_root_shoot + se_root_shoot),
                 width = 0.3, linewidth = 0.5) +
   labs(
     title = expression(bold("Root:Shoot Ratio")),
@@ -264,6 +296,7 @@ ggplot(summary_data, aes(x = reorder(Treatment, mean_root_shoot), y = mean_root_
     y = expression(bold("Root:Shoot Ratio"))
   ) +
   theme_bw(base_size = 12) +
+  guides(fill = "none") +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
     axis.title.x = element_text(face = "bold", size = 12, margin = margin(t = 10)),
