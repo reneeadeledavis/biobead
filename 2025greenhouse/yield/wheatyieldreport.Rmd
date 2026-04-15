@@ -93,7 +93,7 @@ treatment_colors <- c(
   "BioBead"        = "#8DD3C7",
   "BioBead_SL"     = "#BEBADA",
   "Fertilizer"     = "#FB8072",
-  "Microbes_Liquid" = "#FFFFB3",  
+  "Microbes_Liquid"= "#FFFFB3",  
   "Hardygro"       = "#FDB462",
   "Hydrogel"       = "#80B1D3",
   "Neg_ctrl"       = "#D9D9D9"    
