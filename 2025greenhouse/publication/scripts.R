@@ -349,26 +349,15 @@ kruskal.test(Fm_Flux_ug.N2O.N_sqmt_hr ~ Treatment, data = data)
 # Kruskal-Wallis chi-squared = 14.857, df = 7, p-value = 0.03787
 dunn.test(data$Fm_Flux_ug.N2O.N_sqmt_hr, data$Treatment, method = "bh")
 
-### Dunn CLD letters ----
-letters_n2o <- get_dunn_letters(data, "Fm_Flux_ug.N2O.N_sqmt_hr")
-
-plot_data_n2o <- summary_data %>%
-  left_join(letters_n2o, by = "Treatment")
-
 ### Bar plot ----
-ggplot(plot_data_n2o, aes(x = reorder(Treatment, mean_n2o),
-                          y = mean_n2o,
-                          fill = Treatment)) +
+ggplot(summary_data, aes(x = reorder(Treatment, mean_n2o),
+                        y = mean_n2o,
+                        fill = Treatment)) +
   geom_bar(stat = "identity", alpha = 0.8, color = "black", linewidth = 0.3) +
   scale_fill_manual(values = treatment_colors) +
   geom_errorbar(aes(ymin = mean_n2o - se_n2o,
                     ymax = mean_n2o + se_n2o),
                 width = 0.3, linewidth = 0.5) +
-  geom_text(aes(y = mean_n2o + se_n2o + 40,
-                label = tukey_label),
-            size = 4, vjust = 0) +
-  scale_x_discrete(labels = treatment_labels) +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
   labs(
     title = expression(bold("N"[2]*"O-N Flux by Treatment")),
     y     = expression(bold("µg N"[2]*"O-N / m² / hr (Mean ± SE)")),
