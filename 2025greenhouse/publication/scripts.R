@@ -8,11 +8,16 @@ library(Hmisc)
 library(corrplot)
 library(vegan)
 library(ggbiplot)
+library(dunn.test)
+library(multcomp)
+library(FSA)
+library(rcompanion)
 
 # ****************************************************
 # Load data ----
 # ****************************************************
 data <- read.csv("publication/2025greenhousemaster.csv")
+data$Treatment <- as.factor(data$Treatment) #needed for multcomp package
 
 # ****************************************************
 # Summary statistics ----
@@ -64,6 +69,11 @@ summary_data <- data %>%
     sd_pct_hyph    = sd(Hyph_colonization, na.rm = TRUE),
     se_pct_hyph    = sd(Hyph_colonization, na.rm = TRUE) / sqrt(n()),
     
+    #N2O
+    mean_n2o = mean(Fm_Flux_ug.N2O.N_sqmt_hr, na.rm = TRUE),
+    sd_n2o   = sd(Fm_Flux_ug.N2O.N_sqmt_hr,   na.rm = TRUE),
+    se_n2o   = sd(Fm_Flux_ug.N2O.N_sqmt_hr,   na.rm = TRUE) / sqrt(n()),
+    
     n = n(),
     .groups = 'drop'
   )
@@ -72,18 +82,78 @@ summary_data <- data %>%
 cat("=== Summary Statistics ===\n")
 print(summary_data, n = Inf)
 
+# ****************************************************
+# Plot preparation ----
+# ****************************************************
+
 # Set color palette
-treatment_colors <- c(
-  "BB_AMF"         = "#8DD3C7",
-  "BB_Bac"         = "#BC80BD",
-  "BioBead"        = "#BEBADA",
-  "Fertilizer"     = "#FB8072",
-  "Microbes_Liquid"= "#FFFFB3",  
-  "HardyGro"       = "#FDB462",
-  "Hydrogel"       = "#80B1D3",
-  "Neg_ctrl"       = "#D9D9D9"    
+treatment_labels <- c(
+  "BB_AMF"          = "BioBead (AMF)",
+  "BB_Bac"          = "BioBead (Bacteria)",
+  "BioBead"         = "BioBead (Mix)",
+  "Fertilizer"      = "Synthetic Fertilizer",
+  "HardyGro"        = "HardyGro",
+  "Hydrogel"        = "Empty Bead",
+  "Microbes_Liquid" = "Liquid Consortia",
+  "Neg_ctrl"        = "No Treatment"
 )
 
+treatment_colors <- c(
+  # BioBead formulations — blues/teals
+  "BB_Bac"          = "#4E9BB5",   # medium blue
+  "BB_AMF"          = "#2E7D9C",   # deeper blue
+  "BioBead"         = "#1B5E75",   # darkest blue (full mix)
+  
+  # Carrier/delivery controls — greens
+  "Hydrogel"        = "#74C69D",   # empty bead (carrier only)
+  "Microbes_Liquid" = "#40916C",   # liquid (same microbes, no bead)
+  
+  # Commercial comparators — oranges
+  "HardyGro"        = "#F4A261",   # commercial biofertilizer
+  
+  # Conventional/experimental controls — grays & red
+  "Fertilizer"      = "#E63946",   # positive control (red stands out)
+  "Neg_ctrl"        = "#CCCCCC"    # negative control (neutral gray)
+)
+
+
+# Load Tukey letter function
+get_tukey_letters <- function(aov_object) {
+  cld_result <- multcomp::cld(
+    multcomp::glht(aov_object, linfct = multcomp::mcp(Treatment = "Tukey")),
+    decreasing = TRUE   # 'a' = highest group
+  )
+  # Pull the letter vector into a data frame
+  letters_df <- data.frame(
+    Treatment = names(cld_result$mcletters$Letters),
+    tukey_label = cld_result$mcletters$Letters,
+    row.names = NULL
+  )
+  return(letters_df)
+}
+
+get_dunn_letters <- function(data, response_var, group_var = "Treatment", p_adjust = "bh") {
+  
+  dunn_result <- FSA::dunnTest(
+    x      = data[[response_var]],
+    g      = data[[group_var]],
+    method = p_adjust
+  )
+  
+  dunn_table <- dunn_result$res
+  
+  letters_out <- rcompanion::cldList(
+    formula   = P.adj ~ Comparison,
+    data      = dunn_table,
+    threshold = 0.05
+  )
+  
+  return(
+    letters_out %>%
+      rename(Treatment = Group, tukey_label = Letter) %>%
+      select(Treatment, tukey_label)
+  )
+}
 
 # ****************************************************
 # Part 1: Wheat yield ----
@@ -112,28 +182,36 @@ qqnorm(anova_grainweight$residuals, main = "Normal Q-Q Plot - Grain Weight Resid
 qqline(anova_grainweight$residuals, col = "lightblue", lwd = 2)
 
 ### Bar plot ----
-ggplot(summary_data, aes(x = reorder(Treatment, mean_grain_weight), 
-                         y = mean_grain_weight,
-                         fill = Treatment)) +  
-  geom_bar(stat = "identity", alpha = 0.8, color = "black", linewidth = 0.3) +  
-  scale_fill_manual(values = treatment_colors) +  
-  geom_errorbar(aes(ymin = mean_grain_weight - se_grain_weight, 
+letters_grainweight <- get_tukey_letters(anova_grainweight)
+
+plot_data_grain <- summary_data %>%
+  left_join(letters_grainweight, by = "Treatment")
+
+ggplot(plot_data_grain, aes(x = reorder(Treatment, mean_grain_weight),
+                            y = mean_grain_weight,
+                            fill = Treatment)) +
+  geom_bar(stat = "identity", alpha = 0.8, color = "black", linewidth = 0.3) +
+  scale_fill_manual(values = treatment_colors) +
+  geom_errorbar(aes(ymin = mean_grain_weight - se_grain_weight,
                     ymax = mean_grain_weight + se_grain_weight),
                 width = 0.3, linewidth = 0.5) +
+  geom_text(aes(y = mean_grain_weight + se_grain_weight + 0.05,  # nudge above error bar
+                label = tukey_label),
+            size = 4, vjust = 0) +
+  scale_x_discrete(labels = treatment_labels) +
   labs(
     title = expression(bold("Grain Weight")),
-    y = expression(bold("Grain Weight (g)")),
-    x = NULL
+    y     = expression(bold("Grain Weight (g)")),
+    x     = NULL
   ) +
   theme_bw(base_size = 12) +
   guides(fill = "none") +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
-    axis.title.x = element_text(face = "bold", size = 12, margin = margin(t = 10)),
-    axis.title.y = element_text(face = "bold", size = 12, margin = margin(r = 10)),
-    plot.title = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    axis.text.x        = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.y       = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title         = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
     panel.grid.major.x = element_blank(),
-    panel.grid.minor = element_blank()
+    panel.grid.minor   = element_blank()
   )
 
 ## Harvest Index ----
@@ -160,7 +238,12 @@ qqnorm(anova_harvestindex$residuals, main = "Normal Q-Q Plot - Harvest Index Res
 qqline(anova_harvestindex$residuals, col = "lightblue", lwd = 2)
 
 ### Bar plot ----
-ggplot(summary_data, aes(x = reorder(Treatment, mean_harvest_index), 
+letters_harvestindex <- get_tukey_letters(anova_harvestindex)
+
+plot_data_harvestindex <- summary_data %>%
+  left_join(letters_harvestindex, by = "Treatment")
+
+ggplot(plot_data_harvestindex, aes(x = reorder(Treatment, mean_harvest_index), 
                          y = mean_harvest_index,
                          fill = Treatment)) +  
   geom_bar(stat = "identity", alpha = 0.8, color = "black", linewidth = 0.3) +  
@@ -168,6 +251,9 @@ ggplot(summary_data, aes(x = reorder(Treatment, mean_harvest_index),
   geom_errorbar(aes(ymin = mean_harvest_index - se_harvest_index, 
                     ymax = mean_harvest_index + se_harvest_index),
                 width = 0.3, linewidth = 0.5) +
+  geom_text(aes(y = mean_harvest_index + se_harvest_index + 0.05,  # nudge above error bar
+                label = tukey_label),
+            size = 4, vjust = 0) +
   labs(
     title = expression(bold("Harvest Index")),
     y = expression(bold("Harvest Index")),
@@ -185,72 +271,29 @@ ggplot(summary_data, aes(x = reorder(Treatment, mean_harvest_index),
   )
 
 ## Leachate ----
-### ANOVA ----
-#### NH4 -----
-anova_nh4 <- aov(NH4.N_ugml ~ Treatment, data = data)
-summary(anova_nh4)
+### Kruskal-Wallis ----
 
-tukey_nh4 <- TukeyHSD(anova_nh4)
-tukey_nh4
+# NH4
+kruskal.test(NH4.N_ugml ~ Treatment, data = data)
+# Kruskal-Wallis chi-squared = 13.556, df = 7, p-value = 0.05966
+dunn.test(data$NH4.N_ugml, data$Treatment, method = "bh")
 
-# Shapiro-Wilk test for normality
-shapiro.test(anova_nh4$residuals)
-# W = 0.73369, p-value = 9.594e-09 - data not normal
+# NO3
+kruskal.test(NO3.N_ugml ~ Treatment, data = data)
+# Kruskal-Wallis chi-squared = 16.553, df = 7, p-value = 0.02052
+dunn.test(data$NO3.N_ugml, data$Treatment, method = "bh")
 
-# Residuals distribution
-hist(anova_nh4$residuals,
-     main = "NH4-N Residuals",
-     xlab = "Residuals",
-     col = "lightblue",
-     breaks = 20)
+# PO4
+kruskal.test(PO4.P_ugml ~ Treatment, data = data)
+# Kruskal-Wallis chi-squared = 13.503, df = 7, p-value = 0.06076
+dunn.test(data$PO4.P_ugml, data$Treatment, method = "bh")
 
-# Quantile-Quantile plot
-qqnorm(anova_nh4$residuals, main = "Normal Q-Q Plot - NH4-N Residuals")
-qqline(anova_nh4$residuals, col = "lightblue", lwd = 2)
+### Dunn CLD letters ----
+letters_nh4 <- get_dunn_letters(data, "NH4.N_ugml") %>% mutate(Nutrient = "NH4-N")
+letters_no3 <- get_dunn_letters(data, "NO3.N_ugml") %>% mutate(Nutrient = "NO3-N")
+letters_po4 <- get_dunn_letters(data, "PO4.P_ugml") %>% mutate(Nutrient = "PO4-P")
 
-#### NO3 ----
-anova_no3 <- aov(NO3.N_ugml ~ Treatment, data = data)
-summary(anova_no3)
-
-tukey_no3 <- TukeyHSD(anova_no3)
-tukey_no3
-
-# Shapiro-Wilk test for normality
-shapiro.test(anova_no3$residuals)
-# W = 0.74005, p-value = 1.294e-08 - data not normal
-
-# Residuals distribution
-hist(anova_no3$residuals,
-     main = "NO3-N Residuals",
-     xlab = "Residuals",
-     col = "lightblue",
-     breaks = 20)
-
-# Quantile-Quantile plot
-qqnorm(anova_no3$residuals, main = "Normal Q-Q Plot - NO3-N Residuals")
-qqline(anova_no3$residuals, col = "lightblue", lwd = 2)
-
-#### PO4 -----
-anova_po4 <- aov(PO4.P_ugml ~ Treatment, data = data)
-summary(anova_po4)
-
-tukey_po4 <- TukeyHSD(anova_po4)
-tukey_po4
-
-# Shapiro-Wilk test for normality
-shapiro.test(anova_po4$residuals)
-# W = 0.85173, p-value = 6.446e-06 - data not normal
-
-# Residuals distribution
-hist(anova_po4$residuals,
-     main = "PO4-P Residuals",
-     xlab = "Residuals",
-     col = "lightblue",
-     breaks = 20)
-
-# Quantile-Quantile plot
-qqnorm(anova_po4$residuals, main = "Normal Q-Q Plot - PO4-P Residuals")
-qqline(anova_po4$residuals, col = "lightblue", lwd = 2)
+leachate_letters <- bind_rows(letters_nh4, letters_no3, letters_po4)
 
 ### Faceted bar plot ----
 leachate_long <- summary_data %>%
@@ -270,14 +313,19 @@ leachate_long <- summary_data %>%
                       "mean_no3" = "NO3-N",
                       "mean_po4" = "PO4-P"
     )
-  )
+  ) %>%
+  left_join(leachate_letters, by = c("Treatment", "Nutrient"))
 
 ggplot(leachate_long, aes(x = Treatment, y = Mean_ugml, fill = Treatment)) +
   geom_bar(stat = "identity", color = "black", linewidth = 0.3) +
   geom_errorbar(aes(ymin = Mean_ugml - SE, ymax = Mean_ugml + SE),
                 width = 0.2, linewidth = 0.6, color = "grey30") +
+  geom_text(aes(y = Mean_ugml + SE, label = tukey_label),
+            size = 3.5, vjust = -0.4) +
   facet_wrap(~ Nutrient, scales = "free_y") +
   scale_fill_manual(values = treatment_colors) +
+  scale_x_discrete(labels = treatment_labels) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
   labs(
     title = expression(bold("NH"[4]*"-N, NO"[3]*"-N, and PO"[4]*"-P Leachate by Treatment")),
     x     = NULL,
@@ -293,6 +341,48 @@ ggplot(leachate_long, aes(x = Treatment, y = Mean_ugml, fill = Treatment)) +
     panel.grid.minor   = element_blank(),
     strip.text         = element_text(face = "bold", size = 11),
     legend.position    = "none"
+  )
+
+## N2O ----
+### Kruskal-Wallis ----
+kruskal.test(Fm_Flux_ug.N2O.N_sqmt_hr ~ Treatment, data = data)
+# Kruskal-Wallis chi-squared = 14.857, df = 7, p-value = 0.03787
+dunn.test(data$Fm_Flux_ug.N2O.N_sqmt_hr, data$Treatment, method = "bh")
+
+### Dunn CLD letters ----
+letters_n2o <- get_dunn_letters(data, "Fm_Flux_ug.N2O.N_sqmt_hr")
+
+plot_data_n2o <- summary_data %>%
+  left_join(letters_n2o, by = "Treatment")
+
+### Bar plot ----
+ggplot(plot_data_n2o, aes(x = reorder(Treatment, mean_n2o),
+                          y = mean_n2o,
+                          fill = Treatment)) +
+  geom_bar(stat = "identity", alpha = 0.8, color = "black", linewidth = 0.3) +
+  scale_fill_manual(values = treatment_colors) +
+  geom_errorbar(aes(ymin = mean_n2o - se_n2o,
+                    ymax = mean_n2o + se_n2o),
+                width = 0.3, linewidth = 0.5) +
+  geom_text(aes(y = mean_n2o + se_n2o + 40,
+                label = tukey_label),
+            size = 4, vjust = 0) +
+  scale_x_discrete(labels = treatment_labels) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    title = expression(bold("N"[2]*"O-N Flux by Treatment")),
+    y     = expression(bold("µg N"[2]*"O-N / m² / hr (Mean ± SE)")),
+    x     = NULL
+  ) +
+  theme_bw(base_size = 12) +
+  guides(fill = "none") +
+  theme(
+    axis.text.x        = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.x       = element_text(face = "bold", size = 12, margin = margin(t = 10)),
+    axis.title.y       = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title         = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank()
   )
 
 # ****************************************************
@@ -380,7 +470,12 @@ qqnorm(anova_colonization$residuals, main = "Normal Q-Q Plot - Colonization Resi
 qqline(anova_colonization$residuals, col = "lightblue", lwd = 2)
 
 ### Bar plot ----
-ggplot(summary_data, aes(x = reorder(Treatment, mean_pct_total),
+letters_colonization <- get_tukey_letters(anova_colonization)
+
+plot_data_colonization <- summary_data %>%
+  left_join(letters_colonization, by = "Treatment")
+
+ggplot(plot_data_colonization, aes(x = reorder(Treatment, mean_pct_total),
                          y = mean_pct_total,
                          fill = Treatment)) +
   geom_bar(stat = "identity", alpha = 0.8, color = "black", linewidth = 0.3) +
@@ -388,6 +483,10 @@ ggplot(summary_data, aes(x = reorder(Treatment, mean_pct_total),
   geom_errorbar(aes(ymin = mean_pct_total - se_pct_total,
                     ymax = mean_pct_total + se_pct_total),
                 width = 0.3, linewidth = 0.5) +
+  geom_text(aes(y = mean_pct_total + se_pct_total + 2,  # nudge above error bar
+                label = tukey_label),
+            size = 4, vjust = 0) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.12))) + #raises y to fit letters
   labs(
     title = expression(bold("AMF Total Root Colonization")),
     x = NULL,
@@ -429,7 +528,12 @@ qqnorm(anova_arbuscule$residuals, main = "Normal Q-Q Plot - Colonization Residua
 qqline(anova_arbuscule$residuals, col = "lightblue", lwd = 2)
 
 ### Bar plot ----
-ggplot(summary_data, aes(x = reorder(Treatment, mean_pct_arb),
+letters_arbuscule <- get_tukey_letters(anova_arbuscule)
+
+plot_data_arbuscule <- summary_data %>%
+  left_join(letters_arbuscule, by = "Treatment")
+
+ggplot(plot_data_arbuscule, aes(x = reorder(Treatment, mean_pct_arb),
                          y = mean_pct_arb,
                          fill = Treatment)) +
   geom_bar(stat = "identity", alpha = 0.8, color = "black", linewidth = 0.3) +
@@ -437,6 +541,9 @@ ggplot(summary_data, aes(x = reorder(Treatment, mean_pct_arb),
   geom_errorbar(aes(ymin = mean_pct_arb - se_pct_arb,
                     ymax = mean_pct_arb + se_pct_arb),
                 width = 0.3, linewidth = 0.5) +
+  geom_text(aes(y = mean_pct_arb + se_pct_arb + 0.5,  # nudge above error bar
+                label = tukey_label),
+            size = 4, vjust = 0) +
   labs(
     title = expression(bold("Arbuscule Establishment")),
     x = NULL,
@@ -478,7 +585,12 @@ qqnorm(anova_hyph$residuals, main = "Normal Q-Q Plot - Intraradical Hyphae Resid
 qqline(anova_hyph$residuals, col = "lightblue", lwd = 2)
 
 ### Bar plot ----
-ggplot(summary_data, aes(x = reorder(Treatment, mean_pct_hyph),
+letters_hyph <- get_tukey_letters(anova_hyph)
+
+plot_data_hyph <- summary_data %>%
+  left_join(letters_hyph, by = "Treatment")
+
+ggplot(plot_data_hyph, aes(x = reorder(Treatment, mean_pct_hyph),
                          y = mean_pct_hyph,
                          fill = Treatment)) +
   geom_bar(stat = "identity", alpha = 0.8, color = "black", linewidth = 0.3) +
@@ -486,6 +598,9 @@ ggplot(summary_data, aes(x = reorder(Treatment, mean_pct_hyph),
   geom_errorbar(aes(ymin = mean_pct_hyph - se_pct_hyph,
                     ymax = mean_pct_hyph + se_pct_hyph),
                 width = 0.3, linewidth = 0.5) +
+  geom_text(aes(y = mean_pct_hyph + se_pct_hyph + 1,  # nudge above error bar
+                label = tukey_label),
+            size = 4, vjust = 0) +
   labs(
     title = expression(bold("Intraradical Hyphae Establishment")),
     x = NULL,
