@@ -12,6 +12,7 @@ library(dunn.test)
 library(multcomp)
 library(FSA)
 library(rcompanion)
+library(tidytext)
 
 # ****************************************************
 # Load data ----
@@ -57,9 +58,9 @@ summary_data <- data %>%
     se_po4 = sd(PO4.P_ugml, na.rm = TRUE) / sqrt(n()),
     
     # AMF colonization
-    mean_pct_total = mean(AMF_colonization, na.rm = TRUE),
-    sd_pct_total   = sd(AMF_colonization, na.rm = TRUE),
-    se_pct_total   = sd(AMF_colonization, na.rm = TRUE) / sqrt(n()),
+    mean_pct_total = mean(Hyph_colonization + Arb_colonization, na.rm = TRUE),
+    sd_pct_total   = sd(Hyph_colonization + Arb_colonization, na.rm = TRUE),
+    se_pct_total   = sd(Hyph_colonization + Arb_colonization, na.rm = TRUE) / sqrt(n()),
     
     mean_pct_arb   = mean(Arb_colonization, na.rm = TRUE),
     sd_pct_arb     = sd(Arb_colonization, na.rm = TRUE),
@@ -121,7 +122,8 @@ treatment_colors <- c(
 get_tukey_letters <- function(aov_object) {
   cld_result <- multcomp::cld(
     multcomp::glht(aov_object, linfct = multcomp::mcp(Treatment = "Tukey")),
-    decreasing = TRUE   # 'a' = highest group
+    decreasing = TRUE, #a = highest group
+    Letters    = letters, # forces b and c, otherwise they might be dropped
   )
   # Pull the letter vector into a data frame
   letters_df <- data.frame(
@@ -150,8 +152,8 @@ get_dunn_letters <- function(data, response_var, group_var = "Treatment", p_adju
   
   return(
     letters_out %>%
-      rename(Treatment = Group, tukey_label = Letter) %>%
-      select(Treatment, tukey_label)
+      dplyr::rename(Treatment = Group, tukey_label = Letter) %>%
+      dplyr::select(Treatment, tukey_label)        # explicit namespace
   )
 }
 
@@ -165,6 +167,7 @@ anova_grainweight <- aov(GrainWeight_g ~ Treatment, data = data)
 summary(anova_grainweight)
 
 tukey_grainweight <- TukeyHSD(anova_grainweight)
+tukey_grainweight
 
 # Shapiro Wilk test for normality
 shapiro.test(anova_grainweight$residuals)
@@ -254,6 +257,7 @@ ggplot(plot_data_harvestindex, aes(x = reorder(Treatment, mean_harvest_index),
   geom_text(aes(y = mean_harvest_index + se_harvest_index + 0.05,  # nudge above error bar
                 label = tukey_label),
             size = 4, vjust = 0) +
+  scale_x_discrete(labels = treatment_labels) +
   labs(
     title = expression(bold("Harvest Index")),
     y = expression(bold("Harvest Index")),
@@ -296,6 +300,12 @@ letters_po4 <- get_dunn_letters(data, "PO4.P_ugml") %>% mutate(Nutrient = "PO4-P
 leachate_letters <- bind_rows(letters_nh4, letters_no3, letters_po4)
 
 ### Faceted bar plot ----
+leachate_letters <- leachate_letters %>%
+  mutate(
+    Treatment   = as.character(Treatment),  # safe join
+    tukey_label = trimws(tukey_label)
+  )
+
 leachate_long <- summary_data %>%
   pivot_longer(
     cols      = c(mean_nh4, mean_no3, mean_po4),
@@ -312,25 +322,154 @@ leachate_long <- summary_data %>%
                       "mean_nh4" = "NH4-N",
                       "mean_no3" = "NO3-N",
                       "mean_po4" = "PO4-P"
-    )
+    ),
+    Treatment = as.character(Treatment)     # safe join
   ) %>%
-  left_join(leachate_letters, by = c("Treatment", "Nutrient"))
+  left_join(leachate_letters, by = c("Treatment", "Nutrient")) %>%
+  mutate(
+    Treatment         = factor(Treatment, levels = names(treatment_colors)),  # re-factor after join
+    Treatment_display = recode(as.character(Treatment), !!!treatment_labels),
+    Treatment_ordered = reorder_within(Treatment_display, Mean_ugml, Nutrient)  # per-facet rank
+  )
 
-ggplot(leachate_long, aes(x = Treatment, y = Mean_ugml, fill = Treatment)) +
+ggplot(leachate_long, aes(x = Treatment_ordered, y = Mean_ugml, fill = Treatment)) +
   geom_bar(stat = "identity", color = "black", linewidth = 0.3) +
   geom_errorbar(aes(ymin = Mean_ugml - SE, ymax = Mean_ugml + SE),
                 width = 0.2, linewidth = 0.6, color = "grey30") +
   geom_text(aes(y = Mean_ugml + SE, label = tukey_label),
             size = 3.5, vjust = -0.4) +
-  facet_wrap(~ Nutrient, scales = "free_y") +
+  facet_wrap(~ Nutrient, scales = "free") +
+  scale_x_reordered() +
   scale_fill_manual(values = treatment_colors) +
-  scale_x_discrete(labels = treatment_labels) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
   labs(
     title = expression(bold("NH"[4]*"-N, NO"[3]*"-N, and PO"[4]*"-P Leachate by Treatment")),
     x     = NULL,
     y     = expression(bold("Mean Concentration (µg/mL)")),
     fill  = "Treatment"
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x        = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.y       = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title         = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    strip.text         = element_text(face = "bold", size = 11),
+    legend.position    = "none"
+  )
+
+## Soil ions ----
+ions <- read.csv("publication/ions_2025.csv")
+ions$Treatment <- as.factor(ions$Treatment) #needed for multcomp package
+
+summary_ions <- ions %>%
+  group_by(Treatment) %>%
+  summarise(
+    
+    # NH4-N
+    mean_nh4n = mean(NH4, na.rm = TRUE),
+    sd_nh4n = sd(NH4, na.rm = TRUE),
+    se_nh4n = sd(NH4, na.rm = TRUE) / sqrt(n()),
+    
+    # NO3-N
+    mean_no3n = mean(NO3, na.rm = TRUE),
+    sd_no3n = sd(NO3, na.rm = TRUE),
+    se_no3n = sd(NO3, na.rm = TRUE) / sqrt(n()),
+    
+    # PO4-P
+    mean_p = mean(P, na.rm = TRUE),
+    sd_p = sd(P, na.rm = TRUE),
+    se_p = sd(P, na.rm = TRUE) / sqrt(n()),
+    
+    n = n(),
+    .groups = 'drop'
+  )
+
+### ANOVA ----
+
+# NH4
+anova_NH4ion <- aov(NH4 ~ Treatment, data = ions)
+summary(anova_NH4ion)
+
+tukey_NH4ion <- TukeyHSD(anova_NH4ion)
+tukey_NH4ion
+
+shapiro.test(anova_NH4ion$residuals)  
+# W = 0.94399, p-value = 0.2187
+
+# NO3
+anova_NO3ion <- aov(NO3 ~ Treatment, data = ions)
+summary(anova_NO3ion)
+
+tukey_NO3ion <- TukeyHSD(anova_NO3ion)
+tukey_NO3ion
+
+shapiro.test(anova_NO3ion$residuals)
+#W = 0.94585, p-value = 0.2395
+
+# P
+anova_Pion <- aov(P ~ Treatment, data = ions)
+summary(anova_Pion)
+
+tukey_Pion <- TukeyHSD(anova_Pion)
+tukey_Pion
+
+shapiro.test(anova_Pion$residuals)
+#W = 0.95331, p-value = 0.3422
+
+### Tukey letters ----
+letters_nh4ion <- get_tukey_letters(anova_NH4ion) %>% mutate(Nutrient = "NH4-N")
+letters_no3ion <- get_tukey_letters(anova_NO3ion) %>% mutate(Nutrient = "NO3-N")
+letters_pion   <- get_tukey_letters(anova_Pion)   %>% mutate(Nutrient = "PO4-P")
+
+ion_letters <- bind_rows(letters_nh4ion, letters_no3ion, letters_pion) %>%
+  mutate(
+    Treatment   = as.character(Treatment),   # ensure character for join
+    tukey_label = trimws(tukey_label)         # strip cld() padding spaces
+  )
+
+### Faceted bar plot ----
+ions_long <- summary_ions %>%
+  pivot_longer(
+    cols      = c(mean_nh4n, mean_no3n, mean_p),
+    names_to  = "Nutrient",
+    values_to = "Mean_supply"
+  ) %>%
+  mutate(
+    SE = case_when(
+      Nutrient == "mean_nh4n" ~ se_nh4n,
+      Nutrient == "mean_no3n" ~ se_no3n,
+      Nutrient == "mean_p"    ~ se_p
+    ),
+    Nutrient   = recode(Nutrient,
+                        "mean_nh4n" = "NH4-N",
+                        "mean_no3n" = "NO3-N",
+                        "mean_p"    = "PO4-P"
+    ),
+    Treatment = as.character(Treatment)       # character for safe join
+  ) %>%
+  left_join(ion_letters, by = c("Treatment", "Nutrient")) %>%
+  mutate(
+    Treatment         = factor(Treatment, levels = names(treatment_colors)),  # re-factor after join
+    Treatment_display = recode(as.character(Treatment), !!!treatment_labels),
+    Treatment_ordered = reorder_within(Treatment_display, Mean_supply, Nutrient)
+  )
+
+ggplot(ions_long, aes(x = Treatment_ordered, y = Mean_supply, fill = Treatment)) +
+  geom_bar(stat = "identity", color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = Mean_supply - SE, ymax = Mean_supply + SE),
+                width = 0.2, linewidth = 0.6, color = "grey30") +
+  geom_text(aes(y = Mean_supply + SE, label = tukey_label),
+            size = 3.5, vjust = -0.4) +
+  facet_wrap(~ Nutrient, scales = "free") +
+  scale_x_reordered() +
+  scale_fill_manual(values = treatment_colors) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    title = expression(bold("Soil Ion Supply Rates by Treatment")),
+    x     = NULL,
+    y     = expression(bold("Mean Supply Rate (µg / 10 cm² / 2 weeks)"))
   ) +
   theme_bw(base_size = 12) +
   theme(
@@ -358,6 +497,7 @@ ggplot(summary_data, aes(x = reorder(Treatment, mean_n2o),
   geom_errorbar(aes(ymin = mean_n2o - se_n2o,
                     ymax = mean_n2o + se_n2o),
                 width = 0.3, linewidth = 0.5) +
+  scale_x_discrete(labels = treatment_labels) +
   labs(
     title = expression(bold("N"[2]*"O-N Flux by Treatment")),
     y     = expression(bold("µg N"[2]*"O-N / m² / hr (Mean ± SE)")),
@@ -384,8 +524,8 @@ summary_stacked <- data %>%
   summarise(
     mean_Arb   = mean(Arb_colonization,  na.rm = TRUE),
     mean_Hyph  = mean(Hyph_colonization, na.rm = TRUE),
-    se_total   = sd(AMF_colonization, na.rm = TRUE) / sqrt(sum(!is.na(AMF_colonization))),
-    total_mean = mean(AMF_colonization,  na.rm = TRUE),
+    se_total   = sd(Hyph_colonization + Arb_colonization, na.rm = TRUE) / sqrt(sum(!is.na(Hyph_colonization))),
+    total_mean = mean(Hyph_colonization + Arb_colonization, na.rm = TRUE),
     .groups = "drop"
   )
 
@@ -419,6 +559,7 @@ ggplot(stacked_long, aes(x = Treatment, y = Mean_Pct, fill = Structure)) +
     width = 0.2, linewidth = 0.6, color = "grey30"
   ) +
   scale_fill_manual(values = structure_colors) +
+  scale_x_discrete(labels = treatment_labels) +
   labs(
     title = expression(bold("AMF Root Colonization by Structure")),
     x     = NULL,
@@ -476,6 +617,7 @@ ggplot(plot_data_colonization, aes(x = reorder(Treatment, mean_pct_total),
                 label = tukey_label),
             size = 4, vjust = 0) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.12))) + #raises y to fit letters
+  scale_x_discrete(labels = treatment_labels) +
   labs(
     title = expression(bold("AMF Total Root Colonization")),
     x = NULL,
@@ -533,6 +675,7 @@ ggplot(plot_data_arbuscule, aes(x = reorder(Treatment, mean_pct_arb),
   geom_text(aes(y = mean_pct_arb + se_pct_arb + 0.5,  # nudge above error bar
                 label = tukey_label),
             size = 4, vjust = 0) +
+  scale_x_discrete(labels = treatment_labels) +
   labs(
     title = expression(bold("Arbuscule Establishment")),
     x = NULL,
@@ -590,6 +733,7 @@ ggplot(plot_data_hyph, aes(x = reorder(Treatment, mean_pct_hyph),
   geom_text(aes(y = mean_pct_hyph + se_pct_hyph + 1,  # nudge above error bar
                 label = tukey_label),
             size = 4, vjust = 0) +
+  scale_x_discrete(labels = treatment_labels) +
   labs(
     title = expression(bold("Intraradical Hyphae Establishment")),
     x = NULL,

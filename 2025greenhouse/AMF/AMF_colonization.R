@@ -274,6 +274,28 @@ hist(anova_hyph$residuals,
 qqnorm(anova_hyph$residuals, main = "Normal Q-Q Plot - Intraradical Hyphae Residuals")
 qqline(anova_hyph$residuals, col = "lightblue", lwd = 2)
 
+## Vesicle spore establishment
+anova_vs <- aov(Percent_colonization_VS ~ Treatment_category,
+                  data = colonization_filtered)
+summary(anova_vs)
+
+tukey_vs <- TukeyHSD(anova_vs)
+print(tukey_vs)
+
+# Shapiro-Wilk test for normality of residuals
+shapiro.test(anova_vs$residuals)
+
+# Residuals histogram
+hist(anova_vs$residuals,
+     main = "Vesicle Spore Residuals",
+     xlab = "Residuals",
+     col = "lightblue",
+     breaks = 20)
+
+# Q-Q plot
+qqnorm(anova_vs$residuals, main = "Normal Q-Q Plot - Vesicle Spore Residuals")
+qqline(anova_vs$residuals, col = "lightblue", lwd = 2)
+
 
 # ****************************************************
 # Filtered dataset ----
