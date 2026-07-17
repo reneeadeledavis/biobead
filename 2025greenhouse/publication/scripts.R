@@ -359,10 +359,434 @@ ggplot(leachate_long, aes(x = Treatment_ordered, y = Mean_ugml, fill = Treatment
     legend.position    = "none"
   )
 
+## Plant tissue nutrients ----
+tissue <- read.csv("publication/OSU.csv")
+tissue$Treatment <- as.factor(tissue$Treatment)
+tissue$Tissue    <- as.factor(tissue$Tissue)   #making everything a factor for multcomp
+
+### Summary statistics ----
+# need to group by Tissue AND Treatment so each facet gets its own mean/SE
+summary_tissue <- tissue %>%
+  group_by(Tissue, Treatment) %>%
+  summarise(
+    mean_C = mean(C, na.rm = TRUE),
+    se_C   = sd(C, na.rm = TRUE) / sqrt(n()),
+    
+    mean_N = mean(N, na.rm = TRUE),
+    se_N   = sd(N, na.rm = TRUE) / sqrt(n()),
+    
+    mean_P = mean(P, na.rm = TRUE),
+    se_P   = sd(P, na.rm = TRUE) / sqrt(n()),
+    
+    mean_CN = mean(CN_ratio, na.rm = TRUE),
+    se_CN   = sd(CN_ratio, na.rm = TRUE) / sqrt(n()),
+    
+    mean_prot = mean(Crude_protein, na.rm = TRUE),
+    se_prot   = sd(Crude_protein, na.rm = TRUE) / sqrt(n()),
+    
+    n = n(),
+    .groups = "drop"
+  )
+
+### ANOVA ----
+# filter by tissue type
+r <- filter(tissue, Tissue == "Root") 
+abg <- filter(tissue, Tissue == "ABG") 
+g <- filter(tissue, Tissue == "Grain") 
+
+#### C ----
+# C in roots
+anova_C_r <- aov(C ~ Treatment, data = r)
+summary(anova_C_r)
+
+tukey_C_r <- TukeyHSD(anova_C_r)
+tukey_C_r
+
+shapiro.test(anova_C_r$residuals)
+# W = 0.76817, p-value = 9.286e-05
+
+# C in above ground biomass
+anova_C_abg <- aov(C ~ Treatment, data = abg)
+summary(anova_C_abg)
+
+tukey_C_abg <- TukeyHSD(anova_C_abg)
+tukey_C_abg
+
+shapiro.test(anova_C_abg$residuals)
+# W = 0.9834, p-value = 0.9494
+
+# C in grain
+anova_C_g <- aov(C ~ Treatment, data = g)
+summary(anova_C_g)
+
+tukey_C_g <- TukeyHSD(anova_C_g)
+tukey_C_g
+
+shapiro.test(anova_C_g$residuals)
+# W = 0.97803, p-value = 0.857
+
+#### N ----
+# N in roots
+anova_N_r <- aov(N ~ Treatment, data = r)
+summary(anova_N_r)
+
+tukey_N_r <- TukeyHSD(anova_N_r)
+tukey_N_r
+
+shapiro.test(anova_N_r$residuals)
+# W = 0.97314, p-value = 0.7445
+
+# N in above ground biomass
+anova_N_abg <- aov(N ~ Treatment, data = abg)
+summary(anova_N_abg)
+
+tukey_N_abg <- TukeyHSD(anova_N_abg)
+tukey_N_abg
+
+shapiro.test(anova_N_abg$residuals)
+# W = 0.8867, p-value = 0.01137
+
+# N in grain
+anova_N_g <- aov(N ~ Treatment, data = g)
+summary(anova_N_g)
+
+tukey_N_g <- TukeyHSD(anova_N_g)
+tukey_N_g
+
+shapiro.test(anova_N_g$residuals)
+# W = 0.97231, p-value = 0.7242
+
+#### C:N ratio ----
+# C:N in roots
+anova_CN_r <- aov(CN_ratio ~ Treatment, data = r)
+summary(anova_CN_r)
+
+tukey_CN_r <- TukeyHSD(anova_CN_r)
+tukey_CN_r
+
+shapiro.test(anova_CN_r$residuals)
+# W = 0.94115, p-value = 0.173
+
+# C:N in above ground biomass
+anova_CN_abg <- aov(CN_ratio ~ Treatment, data = abg)
+summary(anova_CN_abg)
+
+tukey_CN_abg <- TukeyHSD(anova_CN_abg)
+tukey_CN_abg
+
+shapiro.test(anova_CN_abg$residuals)
+# W = 0.97644, p-value = 0.8223
+
+# C:N in grain
+anova_CN_g <- aov(CN_ratio ~ Treatment, data = g)
+summary(anova_CN_g)
+
+tukey_CN_g <- TukeyHSD(anova_CN_g)
+tukey_CN_g
+
+shapiro.test(anova_CN_g$residuals)
+# W = 0.95896, p-value = 0.4178
+
+#### Crude protein estimation ----
+# Crude protein in roots
+anova_prot_r <- aov(Crude_protein ~ Treatment, data = r)
+summary(anova_prot_r)
+
+tukey_prot_r <- TukeyHSD(anova_prot_r)
+tukey_prot_r
+
+shapiro.test(anova_prot_r$residuals)
+# W = 0.97314, p-value = 0.7445
+
+# Crude protein in above ground biomass
+anova_prot_abg <- aov(Crude_protein ~ Treatment, data = abg)
+summary(anova_prot_abg)
+
+tukey_prot_abg <- TukeyHSD(anova_prot_abg)
+tukey_prot_abg
+
+shapiro.test(anova_prot_abg$residuals)
+# W = 0.8867, p-value = 0.01137
+
+# Crude protein in grain
+anova_prot_g <- aov(Crude_protein ~ Treatment, data = g)
+summary(anova_prot_g)
+
+tukey_prot_g <- TukeyHSD(anova_prot_g)
+tukey_prot_g
+
+shapiro.test(anova_prot_g$residuals)
+# W = 0.97231, p-value = 0.7242
+
+#### P ----
+# P in roots
+anova_P_r <- aov(P ~ Treatment, data = r)
+summary(anova_P_r)
+
+tukey_P_r <- TukeyHSD(anova_P_r)
+tukey_P_r
+
+shapiro.test(anova_P_r$residuals)
+# W = 0.94091, p-value = 0.171
+
+# P in above ground biomass
+anova_P_abg <- aov(P ~ Treatment, data = abg)
+summary(anova_P_abg)
+
+tukey_P_abg <- TukeyHSD(anova_P_abg)
+tukey_P_abg
+
+shapiro.test(anova_P_abg$residuals)
+# W = 0.94206, p-value = 0.1813
+
+# P in grain
+anova_P_g <- aov(P ~ Treatment, data = g)
+summary(anova_P_g)
+
+tukey_P_g <- TukeyHSD(anova_P_g)
+tukey_P_g
+
+shapiro.test(anova_P_g$residuals)
+# W = 0.96745, p-value = 0.6045
+
+### Tukey letters ----
+letters_C_r <- get_tukey_letters(anova_C_r) %>%
+  mutate(Tissue = "Root", Nutrient = "C")
+letters_C_abg <- get_tukey_letters(anova_C_abg) %>%
+  mutate(Tissue = "ABG", Nutrient = "C")
+letters_C_g <- get_tukey_letters(anova_C_g) %>%
+  mutate(Tissue = "Grain", Nutrient = "C")
+
+letters_N_r <- get_tukey_letters(anova_N_r) %>%
+  mutate(Tissue = "Root", Nutrient = "N")
+letters_N_abg <- get_tukey_letters(anova_N_abg) %>%
+  mutate(Tissue = "ABG", Nutrient = "N")
+letters_N_g <- get_tukey_letters(anova_N_g) %>%
+  mutate(Tissue = "Grain", Nutrient = "N")
+
+letters_CN_r <- get_tukey_letters(anova_CN_r) %>%
+  mutate(Tissue = "Root", Nutrient = "CN_ratio")
+letters_CN_abg <- get_tukey_letters(anova_CN_abg) %>%
+  mutate(Tissue = "ABG", Nutrient = "CN_ratio")
+letters_CN_g <- get_tukey_letters(anova_CN_g) %>%
+  mutate(Tissue = "Grain", Nutrient = "CN_ratio")
+
+letters_prot_r <- get_tukey_letters(anova_prot_r) %>%
+  mutate(Tissue = "Root", Nutrient = "Crude_protein")
+letters_prot_abg <- get_tukey_letters(anova_prot_abg) %>%
+  mutate(Tissue = "ABG", Nutrient = "Crude_protein")
+letters_prot_g <- get_tukey_letters(anova_prot_g) %>%
+  mutate(Tissue = "Grain", Nutrient = "Crude_protein")
+
+letters_P_r <- get_tukey_letters(anova_P_r) %>%
+  mutate(Tissue = "Root", Nutrient = "P")
+letters_P_abg <- get_tukey_letters(anova_P_abg) %>%
+  mutate(Tissue = "ABG", Nutrient = "P")
+letters_P_g <- get_tukey_letters(anova_P_g) %>%
+  mutate(Tissue = "Grain", Nutrient = "P")
+
+tissue_letters <- bind_rows(letters_C_r, letters_C_abg, letters_C_g, 
+                            letters_N_r, letters_N_abg, letters_N_g, 
+                            letters_CN_r, letters_CN_abg, letters_CN_g,
+                            letters_prot_r, letters_prot_abg, letters_prot_g,
+                            letters_P_r, letters_P_abg, letters_P_g) %>%
+  mutate(
+    Treatment   = as.character(Treatment),   # ensure character for join
+    tukey_label = trimws(tukey_label)         # strip cld() padding spaces
+  )
+
+### Faceted bar plots ----
+tissue_labels <- c(
+  "ABG"   = "Aboveground \n Biomass",
+  "Root"  = "Root",
+  "Grain" = "Grain"
+)
+
+#### C ----
+tissue_C <- summary_tissue %>%
+  left_join(filter(tissue_letters, Nutrient == "C"), by = c("Tissue", "Treatment")) %>%
+  mutate(
+    Treatment         = factor(Treatment, levels = names(treatment_colors)),
+    Treatment_display = recode(as.character(Treatment), !!!treatment_labels),
+    Treatment_ordered = reorder_within(Treatment_display, mean_C, Tissue)
+  )
+
+ggplot(tissue_C, aes(x = Treatment_ordered, y = mean_C, fill = Treatment)) +
+  geom_bar(stat = "identity", color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = mean_C - se_C, ymax = mean_C + se_C),
+                width = 0.2, linewidth = 0.6, color = "grey30") +
+  geom_text(aes(y = mean_C + se_C, label = tukey_label),
+            size = 3.5, vjust = -0.4) +
+  facet_wrap(~ Tissue, scales = "free", labeller = as_labeller(tissue_labels)) +
+  scale_x_reordered() +
+  scale_fill_manual(values = treatment_colors) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    title = expression(bold("Carbon Concentration by Plant Tissue")),
+    x     = NULL,
+    y     = expression(bold("Mean C (%)")),
+    fill  = "Treatment"
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x        = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.y       = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title         = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    strip.text         = element_text(face = "bold", size = 11),
+    legend.position    = "none"
+  )
+
+#### N ----
+tissue_N <- summary_tissue %>%
+  left_join(filter(tissue_letters, Nutrient == "N"), by = c("Tissue", "Treatment")) %>%
+  mutate(
+    Treatment         = factor(Treatment, levels = names(treatment_colors)),
+    Treatment_display = recode(as.character(Treatment), !!!treatment_labels),
+    Treatment_ordered = reorder_within(Treatment_display, mean_N, Tissue)
+  )
+
+ggplot(tissue_N, aes(x = Treatment_ordered, y = mean_N, fill = Treatment)) +
+  geom_bar(stat = "identity", color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = mean_N - se_N, ymax = mean_N + se_N),
+                width = 0.2, linewidth = 0.6, color = "grey30") +
+  geom_text(aes(y = mean_N + se_N, label = tukey_label),
+            size = 3.5, vjust = -0.4) +
+  facet_wrap(~ Tissue, scales = "free", labeller = as_labeller(tissue_labels)) +
+  scale_x_reordered() +
+  scale_fill_manual(values = treatment_colors) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    title = expression(bold("Nitrogen Concentration by Plant Tissue")),
+    x     = NULL,
+    y     = expression(bold("Mean N (%)")),
+    fill  = "Treatment"
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x        = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.y       = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title         = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    strip.text         = element_text(face = "bold", size = 11),
+    legend.position    = "none"
+  )
+
+#### C:N ratio ----
+tissue_CN <- summary_tissue %>%
+  left_join(filter(tissue_letters, Nutrient == "CN_ratio"), by = c("Tissue", "Treatment")) %>%
+  mutate(
+    Treatment         = factor(Treatment, levels = names(treatment_colors)),
+    Treatment_display = recode(as.character(Treatment), !!!treatment_labels),
+    Treatment_ordered = reorder_within(Treatment_display, mean_CN, Tissue)
+  )
+
+ggplot(tissue_CN, aes(x = Treatment_ordered, y = mean_CN, fill = Treatment)) +
+  geom_bar(stat = "identity", color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = mean_CN - se_CN, ymax = mean_CN + se_CN),
+                width = 0.2, linewidth = 0.6, color = "grey30") +
+  geom_text(aes(y = mean_CN + se_CN, label = tukey_label),
+            size = 3.5, vjust = -0.4) +
+  facet_wrap(~ Tissue, scales = "free", labeller = as_labeller(tissue_labels)) +
+  scale_x_reordered() +
+  scale_fill_manual(values = treatment_colors) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    title = expression(bold("C:N Ratio by Plant Tissue")),
+    x     = NULL,
+    y     = expression(bold("Mean C:N Ratio")),
+    fill  = "Treatment"
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x        = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.y       = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title         = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    strip.text         = element_text(face = "bold", size = 11),
+    legend.position    = "none"
+  )
+
+#### Crude protein estimation ----
+tissue_prot <- summary_tissue %>%
+  left_join(filter(tissue_letters, Nutrient == "Crude_protein"), by = c("Tissue", "Treatment")) %>%
+  mutate(
+    Treatment         = factor(Treatment, levels = names(treatment_colors)),
+    Treatment_display = recode(as.character(Treatment), !!!treatment_labels),
+    Treatment_ordered = reorder_within(Treatment_display, mean_prot, Tissue)
+  )
+
+ggplot(tissue_prot, aes(x = Treatment_ordered, y = mean_prot, fill = Treatment)) +
+  geom_bar(stat = "identity", color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = mean_prot - se_prot, ymax = mean_prot + se_prot),
+                width = 0.2, linewidth = 0.6, color = "grey30") +
+  geom_text(aes(y = mean_prot + se_prot, label = tukey_label),
+            size = 3.5, vjust = -0.4) +
+  facet_wrap(~ Tissue, scales = "free", labeller = as_labeller(tissue_labels)) +
+  scale_x_reordered() +
+  scale_fill_manual(values = treatment_colors) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    title = expression(bold("Crude Protein Estimation by Plant Tissue")),
+    x     = NULL,
+    y     = expression(bold("Mean Crude Protein Estimation (%)")),
+    fill  = "Treatment"
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x        = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.y       = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title         = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    strip.text         = element_text(face = "bold", size = 11),
+    legend.position    = "none"
+  )
+
+#### P ----
+tissue_P <- summary_tissue %>%
+  left_join(filter(tissue_letters, Nutrient == "P"), by = c("Tissue", "Treatment")) %>%
+  mutate(
+    Treatment         = factor(Treatment, levels = names(treatment_colors)),
+    Treatment_display = recode(as.character(Treatment), !!!treatment_labels),
+    Treatment_ordered = reorder_within(Treatment_display, mean_P, Tissue)
+  )
+
+ggplot(tissue_P, aes(x = Treatment_ordered, y = mean_P, fill = Treatment)) +
+  geom_bar(stat = "identity", color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = mean_P - se_P, ymax = mean_P + se_P),
+                width = 0.2, linewidth = 0.6, color = "grey30") +
+  geom_text(aes(y = mean_P + se_P, label = tukey_label),
+            size = 3.5, vjust = -0.4) +
+  facet_wrap(~ Tissue, scales = "free", labeller = as_labeller(tissue_labels)) +
+  scale_x_reordered() +
+  scale_fill_manual(values = treatment_colors) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    title = expression(bold("Phosphorus Concentration by Plant Tissue")),
+    x     = NULL,
+    y     = expression(bold("Mean P (%)")),
+    fill  = "Treatment"
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x        = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.y       = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title         = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    strip.text         = element_text(face = "bold", size = 11),
+    legend.position    = "none"
+  )
+
 ## Soil ions ----
 ions <- read.csv("publication/ions_2025.csv")
 ions$Treatment <- as.factor(ions$Treatment) #needed for multcomp package
 
+### Summary statistics ----
 summary_ions <- ions %>%
   group_by(Treatment) %>%
   summarise(
