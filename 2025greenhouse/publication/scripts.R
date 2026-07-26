@@ -378,6 +378,9 @@ summary_tissue <- tissue %>%
     mean_P = mean(P, na.rm = TRUE),
     se_P   = sd(P, na.rm = TRUE) / sqrt(n()),
     
+    mean_P_g = mean(P_g, na.rm = TRUE),
+    se_P_g   = sd(P_g, na.rm = TRUE) / sqrt(n()),
+    
     mean_CN = mean(CN_ratio, na.rm = TRUE),
     se_CN   = sd(CN_ratio, na.rm = TRUE) / sqrt(n()),
     
@@ -549,6 +552,37 @@ tukey_P_g
 shapiro.test(anova_P_g$residuals)
 # W = 0.96745, p-value = 0.6045
 
+#### Total P(g) ----
+# P in roots
+anova_P_g_r <- aov(P_g ~ Treatment, data = r)
+summary(anova_P_g_r)
+
+tukey_P_g_r <- TukeyHSD(anova_P_g_r)
+tukey_P_g_r 
+
+shapiro.test(anova_P_g_r$residuals)
+# W = 0.96397, p-value = 0.5233
+
+# P in above ground biomass
+anova_P_g_abg <- aov(P_g ~ Treatment, data = abg)
+summary(anova_P_g_abg)
+
+tukey_P_g_abg <- TukeyHSD(anova_P_g_abg)
+tukey_P_g_abg
+
+shapiro.test(anova_P_g_abg$residuals)
+# W = 0.96034, p-value = 0.4452
+
+# P in grain
+anova_P_g_g <- aov(P_g ~ Treatment, data = g)
+summary(anova_P_g_g)
+
+tukey_P_g_g <- TukeyHSD(anova_P_g_g)
+tukey_P_g_g
+
+shapiro.test(anova_P_g_g$residuals)
+# W = 0.94781, p-value = 0.2427
+
 ### Tukey letters ----
 letters_C_r <- get_tukey_letters(anova_C_r) %>%
   mutate(Tissue = "Root", Nutrient = "C")
@@ -585,11 +619,19 @@ letters_P_abg <- get_tukey_letters(anova_P_abg) %>%
 letters_P_g <- get_tukey_letters(anova_P_g) %>%
   mutate(Tissue = "Grain", Nutrient = "P")
 
+letters_P_g_r <- get_tukey_letters(anova_P_g_r) %>%
+  mutate(Tissue = "Root", Nutrient = "P(g)")
+letters_P_g_abg <- get_tukey_letters(anova_P_g_abg) %>%
+  mutate(Tissue = "ABG", Nutrient = "P(g)")
+letters_P_g_g <- get_tukey_letters(anova_P_g_g) %>%
+  mutate(Tissue = "Grain", Nutrient = "P(g)")
+
 tissue_letters <- bind_rows(letters_C_r, letters_C_abg, letters_C_g, 
                             letters_N_r, letters_N_abg, letters_N_g, 
                             letters_CN_r, letters_CN_abg, letters_CN_g,
                             letters_prot_r, letters_prot_abg, letters_prot_g,
-                            letters_P_r, letters_P_abg, letters_P_g) %>%
+                            letters_P_r, letters_P_abg, letters_P_g,
+                            letters_P_g_r, letters_P_g_abg, letters_P_g_g) %>%
   mutate(
     Treatment   = as.character(Treatment),   # ensure character for join
     tukey_label = trimws(tukey_label)         # strip cld() padding spaces
@@ -769,6 +811,42 @@ ggplot(tissue_P, aes(x = Treatment_ordered, y = mean_P, fill = Treatment)) +
     title = expression(bold("Phosphorus Concentration by Plant Tissue")),
     x     = NULL,
     y     = expression(bold("Mean P (%)")),
+    fill  = "Treatment"
+  ) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x        = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title.y       = element_text(face = "bold", size = 12, margin = margin(r = 10)),
+    plot.title         = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    strip.text         = element_text(face = "bold", size = 11),
+    legend.position    = "none"
+  )
+
+#### Total P (g) ----
+tissue_P_g <- summary_tissue %>%
+  left_join(filter(tissue_letters, Nutrient == "P(g)"), by = c("Tissue", "Treatment")) %>%
+  mutate(
+    Treatment         = factor(Treatment, levels = names(treatment_colors)),
+    Treatment_display = recode(as.character(Treatment), !!!treatment_labels),
+    Treatment_ordered = reorder_within(Treatment_display, mean_P_g, Tissue)
+  )
+
+ggplot(tissue_P_g, aes(x = Treatment_ordered, y = mean_P_g, fill = Treatment)) +
+  geom_bar(stat = "identity", color = "black", linewidth = 0.3) +
+  geom_errorbar(aes(ymin = mean_P_g - se_P_g, ymax = mean_P_g + se_P_g),
+                width = 0.2, linewidth = 0.6, color = "grey30") +
+  geom_text(aes(y = mean_P_g + se_P_g, label = tukey_label),
+            size = 3.5, vjust = -0.4) +
+  facet_wrap(~ Tissue, scales = "free", labeller = as_labeller(tissue_labels)) +
+  scale_x_reordered() +
+  scale_fill_manual(values = treatment_colors) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    title = expression(bold("Total P mass by Plant Tissue")),
+    x     = NULL,
+    y     = expression(bold("Mean P mass (g) (%)")),
     fill  = "Treatment"
   ) +
   theme_bw(base_size = 12) +
