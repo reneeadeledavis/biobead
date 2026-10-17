@@ -17,10 +17,10 @@ library(tidytext)
 # ****************************************************
 # Load data ----
 # ****************************************************
-data <- read.csv("2025greenhousemaster.csv", fileEncoding = "UTF-8-BOM")
+data <- read.csv("publication/2025greenhousemaster.csv", fileEncoding = "UTF-8-BOM")
 data$Treatment <- as.factor(data$Treatment) # needed for multcomp package
 
-tissue <- read.csv("OSU.csv", fileEncoding = "UTF-8-BOM")
+tissue <- read.csv("publication/OSU.csv", fileEncoding = "UTF-8-BOM")
 tissue$Treatment <- as.factor(tissue$Treatment)
 tissue$Tissue    <- as.factor(tissue$Tissue) # making everything a factor for multcomp
 
@@ -1265,21 +1265,36 @@ ggplot(plot_data_hyph, aes(x = reorder(Treatment, mean_pct_hyph),
 # ****************************************************
 
 ## Data prep ----
-tissue_wide <- tissue %>%
-  dplyr::select(Sample_ID, Tissue, N, P) %>%
-  pivot_wider(
-    names_from  = Tissue,
-    values_from = c(N, P),
-    names_sep   = "_"            # N_ABG, N_Grain, N_Root, P_ABG, P_Grain, P_Root
+## Pool composite ----
+# G{trt}-{k} = master plants 2k-1 and 2k (G1-1 = T1-1 + T1-2); plant 7 was not analyzed
+data_pool <- data %>%
+  tidyr::separate(Sample_ID, into = c("trt_num", "plant"), sep = "-", remove = FALSE) %>%
+  mutate(trt_num = sub("^T", "", trt_num),
+         plant   = as.integer(plant)) %>%
+  filter(plant <= 6) %>%
+  mutate(Pool_ID = paste0("G", trt_num, "-", ceiling(plant / 2))) %>% #this is how the pool is created
+  group_by(Pool_ID, Treatment) %>%
+  summarise(
+    # order is important - HI first: the next lines overwrite columns of the same name inside summarise()
+    Harvest_Index    = sum(GrainWeight_g) / sum(Total_biomass - Root_biomass_g),
+    AMF_colonization = mean(AMF_colonization),
+    Total_biomass    = mean(Total_biomass),
+    n_plants         = n(),
+    .groups = "drop"
   )
 
-composite <- data %>%
-  dplyr::select(Sample_ID, Treatment, AMF_colonization, Total_biomass, Harvest_Index) %>%
-  inner_join(tissue_wide, by = "Sample_ID") %>%
-  inner_join(dplyr::select(p_harvest, Sample_ID, Whole_Plant_P_g, P_Harvest_Index),
-             by = "Sample_ID")
+tissue$Pool_ID <- sub("^T", "G", tissue$Sample_ID)  # matches with OSU data, creates a new column from the result
 
-nrow(composite)   # should be 24; if not, something is wrong with teh Sample IDs for joining
+tissue_wide <- tissue %>%
+  dplyr::select(Pool_ID, Tissue, N, P, P_g) %>%
+  pivot_wider(names_from = Tissue, values_from = c(N, P, P_g), names_sep = "_") %>%
+  mutate(
+    Whole_Plant_P_g = (P_g_Root + P_g_ABG + P_g_Grain) / 2,    # per plant; each pool = 2 plants
+    P_Harvest_Index = P_g_Grain / (P_g_Root + P_g_ABG + P_g_Grain)
+  )
+
+composite <- inner_join(data_pool, tissue_wide, by = "Pool_ID")
+stopifnot(nrow(composite) == 24, all(composite$n_plants == 2))
 
 ## Pearson's correlation ----
 cor_vars <- composite[, c("N_Root", "N_ABG", "N_Grain",          # %N by tissue
@@ -1359,8 +1374,8 @@ pca_plot <- ggbiplot(pca, groups = treatments,
   scale_x_continuous(expand = expansion(mult = 0.5)) +
   scale_y_continuous(expand = expansion(mult = 0.3)) +
   labs(colour = "Treatment",
-       x = "PC1 (56.2%)",   # update from summary()
-       y = "PC2 (14,2%)",
+       x = "PC1 (58.2%)",   # update from summary()
+       y = "PC2 (13.3%)",
        caption = "PCA: AMF colonization and plant response variables") +
   theme_bw()
 
